@@ -3,10 +3,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: deck rail on the left, one ruled index card centre stage, Leitner box tray beneath it. */
+/* Layout: app shell with a nav + deck rail on the left and one working surface on the right; the ruled index card is the signature object. */
 :root {
   --paper: #eef1f4;
   --surface: #ffffff;
+  --sunk: #e4e9ef;
   --ink: #1b2433;
   --muted: #5d6878;
   --line: #d5dce5;
@@ -24,110 +25,195 @@
   --f-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --paper: #12161d; --surface: #1b212b; --ink: #e6ebf2; --muted: #97a2b2; --line: #2d3543;
+  --paper: #12161d; --surface: #1b212b; --sunk: #161b23; --ink: #e6ebf2; --muted: #97a2b2; --line: #2d3543;
   --rule-blue: #34496a; --rule-red: #e0675a; --accent: #7ea5ec; --accent-ink: #0f1724;
   --again: #e57565; --hard: #e0a945; --good: #5cbf83; --easy: #7ea5ec;
   --shadow: 0 1px 0 rgba(0,0,0,.3), 0 10px 30px -12px rgba(0,0,0,.6); color-scheme: dark;
 } }
 :root[data-theme="dark"] {
-  --paper: #12161d; --surface: #1b212b; --ink: #e6ebf2; --muted: #97a2b2; --line: #2d3543;
+  --paper: #12161d; --surface: #1b212b; --sunk: #161b23; --ink: #e6ebf2; --muted: #97a2b2; --line: #2d3543;
   --rule-blue: #34496a; --rule-red: #e0675a; --accent: #7ea5ec; --accent-ink: #0f1724;
   --again: #e57565; --hard: #e0a945; --good: #5cbf83; --easy: #7ea5ec;
   --shadow: 0 1px 0 rgba(0,0,0,.3), 0 10px 30px -12px rgba(0,0,0,.6); color-scheme: dark;
 }
 * { box-sizing: border-box; }
-html, body { min-height: 100%; }
 body { background: var(--paper); color: var(--ink); font: 15px/1.5 var(--f-display);
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px; }
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 18px 48px; }
 button, input, textarea, select { font: inherit; color: inherit; }
-button { cursor: pointer; }
+button, [role="button"] { cursor: pointer; }
+a { color: var(--accent); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { text-wrap: balance; }
 
-.app { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 28px; }
-@media (max-width: 820px) { .app { grid-template-columns: minmax(0, 1fr); } }
+.app { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 20px 32px; }
+@media (max-width: 860px) { .app { grid-template-columns: minmax(0, 1fr); } }
 
-header.brand { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.logo { font-weight: 700; font-size: 28px; letter-spacing: -.02em; display: flex; align-items: center; gap: 10px; margin: 0; }
-.logo-mark { width: 26px; height: 18px; border-radius: 2px; background: var(--surface); border: 1px solid var(--line);
+/* Top bar */
+.topbar { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.logo { font-weight: 700; font-size: 26px; letter-spacing: -.02em; display: flex; align-items: center; gap: 10px; margin: 0; text-decoration: none; color: var(--ink); }
+.logo-mark { width: 26px; height: 18px; border-radius: 2px; background-color: var(--surface); border: 1px solid var(--line);
   background-image: linear-gradient(var(--rule-red), var(--rule-red)), repeating-linear-gradient(to bottom, transparent 0 5px, var(--rule-blue) 5px 6px);
   background-size: 100% 1.5px, 100% 100%; background-position: 0 4px, 0 6px; background-repeat: no-repeat; transform: rotate(-6deg); }
-.streak { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.top-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.chip { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; background: var(--surface); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; text-decoration: none; }
+.chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.chip.cloud .dot { background: var(--good); } .chip.saving .dot { background: var(--hard); } .chip.error .dot { background: var(--again); }
+.chip.timer { color: var(--ink); }
 
-/* Deck rail */
-aside { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+/* Side rail */
+aside { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 .label { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; margin: 0; }
-.decks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-@media (max-width: 820px) { .decks { flex-direction: row; overflow-x: auto; padding-bottom: 4px; } .decks li { flex: 0 0 auto; } }
-.deck-btn { width: 100%; text-align: left; background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 9px 12px;
-  display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+nav.modes { display: flex; flex-direction: column; gap: 2px; }
+nav.modes a { display: flex; align-items: center; justify-content: space-between; gap: 8px; text-decoration: none; color: var(--ink); padding: 7px 10px; border-radius: 7px; font-weight: 600; }
+nav.modes a:hover { background: var(--surface); }
+nav.modes a[aria-current="page"] { background: var(--ink); color: var(--paper); }
+nav.modes a .k { font-family: var(--f-mono); font-size: 10.5px; color: inherit; opacity: .55; font-weight: 400; }
+nav.modes .ai-tag { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; opacity: .7; }
+.decks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.deck-btn { width: 100%; text-align: left; background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .deck-btn:hover { background: var(--surface); }
 .deck-btn[aria-current="true"] { background: var(--surface); border-color: var(--line); box-shadow: var(--shadow); }
 .deck-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.due-pill { font-family: var(--f-mono); font-size: 11px; padding: 1px 7px; border-radius: 99px; background: var(--paper); color: var(--muted); border: 1px solid var(--line); flex: none; }
-.due-pill.has { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.pill { font-family: var(--f-mono); font-size: 11px; padding: 1px 7px; border-radius: 99px; background: var(--paper); color: var(--muted); border: 1px solid var(--line); flex: none; font-variant-numeric: tabular-nums; }
+.pill.has { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 .new-deck { display: flex; gap: 6px; }
 .new-deck input { flex: 1; min-width: 0; }
-.field { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
-.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 14px; font-weight: 600; }
+@media (max-width: 860px) {
+  nav.modes, .decks { flex-direction: row; overflow-x: auto; padding-bottom: 4px; }
+  nav.modes a, .decks li { flex: 0 0 auto; }
+  nav.modes a .k { display: none; }
+}
+
+.field { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 0; }
+textarea.field { resize: vertical; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--ink); }
 .btn:hover { border-color: var(--muted); }
 .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 .btn.ghost { background: transparent; }
 .btn.danger { color: var(--again); }
-.hint { font-size: 12px; color: var(--muted); margin: 0; }
+.btn.small { padding: 4px 10px; font-size: 13px; }
+.btn[disabled] { opacity: .45; pointer-events: none; }
+.hint { font-size: 12.5px; color: var(--muted); margin: 0; }
+kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--paper); color: var(--muted); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
 /* Main */
 main { min-width: 0; display: flex; flex-direction: column; gap: 22px; }
-.deck-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
-.deck-head h2 { margin: 0; font-size: 26px; letter-spacing: -.015em; text-wrap: balance; }
+.view-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.view-head h2 { margin: 0; font-size: 28px; letter-spacing: -.015em; line-height: 1.15; }
+.view-head .sub { margin: 4px 0 0; color: var(--muted); }
 .sample-tag { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border: 1px dashed var(--line); border-radius: 4px; padding: 1px 6px; margin-left: 8px; vertical-align: middle; }
-.tabs { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; }
-.tabs button { border: 0; background: transparent; border-radius: 7px; padding: 6px 14px; font-weight: 600; color: var(--muted); }
-.tabs button[aria-selected="true"] { background: var(--ink); color: var(--paper); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.panel h3 { margin: 0; font-size: 16px; }
+.seg { display: inline-flex; background: var(--sunk); border-radius: 9px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: transparent; border-radius: 6px; padding: 5px 12px; font-weight: 600; color: var(--muted); font-size: 13px; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
 
-/* The index card */
+/* Overview */
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 760px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.tile .num { font-size: 34px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tile .num small { font-size: 15px; color: var(--muted); font-weight: 600; }
+.tile.goal { flex-direction: row; align-items: center; gap: 14px; }
+.ring-bg { stroke: var(--sunk); } .ring-fg { stroke: var(--accent); transition: stroke-dashoffset .4s; }
+.goal-edit { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.goal-edit input { width: 58px; padding: 2px 6px; font-family: var(--f-mono); font-size: 12px; }
+.two { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 960px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.heat-wrap { overflow-x: auto; }
+.heat { display: grid; grid-template-rows: repeat(7, 13px); grid-auto-flow: column; grid-auto-columns: 13px; gap: 3px; width: max-content; }
+.heat i { border-radius: 2px; background: var(--sunk); }
+.heat i.l1 { background: color-mix(in srgb, var(--accent) 28%, var(--sunk)); }
+.heat i.l2 { background: color-mix(in srgb, var(--accent) 52%, var(--sunk)); }
+.heat i.l3 { background: color-mix(in srgb, var(--accent) 76%, var(--sunk)); }
+.heat i.l4 { background: var(--accent); }
+.heat i.fut { background: transparent; }
+.heat i.today { outline: 1.5px solid var(--ink); outline-offset: 1px; }
+.legend { display: flex; gap: 4px; align-items: center; font-size: 11px; color: var(--muted); }
+.legend i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
+.week-stats { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.week-stats b { color: var(--ink); font-variant-numeric: tabular-nums; }
+svg.chart { width: 100%; height: auto; display: block; }
+svg.chart .col { fill: var(--accent); } svg.chart .col.zero { fill: var(--line); }
+svg.chart .grid { stroke: var(--line); stroke-width: 1; }
+svg.chart text { fill: var(--muted); font-family: var(--f-mono); font-size: 11px; }
+svg.chart text.val { fill: var(--ink); font-weight: 600; }
+.deck-table { display: flex; flex-direction: column; }
+.deck-row { display: grid; grid-template-columns: minmax(0, 1fr) 90px 56px auto; gap: 14px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.deck-row:last-child { border-bottom: 0; }
+@media (max-width: 560px) { .deck-row { grid-template-columns: minmax(0, 1fr) auto; } .deck-row .mbar-wrap, .deck-row .due-col { display: none; } }
+.deck-row .nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deck-row .nm small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+.mbar { height: 6px; background: var(--sunk); border-radius: 3px; overflow: hidden; }
+.mbar i { display: block; height: 100%; background: var(--good); }
+.mbar-wrap { display: flex; flex-direction: column; gap: 3px; font-family: var(--f-mono); font-size: 11px; color: var(--muted); }
+.due-col { font-family: var(--f-mono); font-size: 12px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.due-col.has { color: var(--accent); font-weight: 600; }
+
+/* Index card */
 .stage { perspective: 1400px; }
-.card { position: relative; width: 100%; max-width: 640px; aspect-ratio: 5 / 3; margin: 0 auto; border: 0; padding: 0; background: none;
-  transform-style: preserve-3d; transition: transform .5s cubic-bezier(.3,.7,.2,1); display: block; }
-@media (max-width: 520px) { .card { aspect-ratio: 4 / 3.4; } }
+.card { position: relative; width: 100%; max-width: 640px; aspect-ratio: 5 / 3; margin: 0 auto; transform-style: preserve-3d; transition: transform .5s cubic-bezier(.3,.7,.2,1); display: block; }
+@media (max-width: 520px) { .card { aspect-ratio: 4 / 3.5; } }
 .card.flipped { transform: rotateY(180deg); }
 .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 6px; background-color: var(--surface);
-  box-shadow: var(--shadow); border: 1px solid var(--line); display: flex; flex-direction: column; padding: 20px 26px 22px; overflow: hidden; }
+  box-shadow: var(--shadow); border: 1px solid var(--line); display: flex; flex-direction: column; padding: 18px 24px 20px; overflow: hidden; }
 .face.back { transform: rotateY(180deg);
-  background-image: linear-gradient(to bottom, transparent 54px, var(--rule-red) 54px, var(--rule-red) 56px, transparent 56px),
+  background-image: linear-gradient(to bottom, transparent 52px, var(--rule-red) 52px, var(--rule-red) 54px, transparent 54px),
     repeating-linear-gradient(to bottom, transparent 0 27px, var(--rule-blue) 27px 28px);
-  background-position: 0 0, 0 56px; background-repeat: no-repeat, repeat; }
-.face-meta { display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+  background-position: 0 0, 0 54px; background-repeat: no-repeat, repeat; }
+.face-meta { display: flex; justify-content: space-between; gap: 12px; font-family: var(--f-mono); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.face-meta span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .face-body { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; font-family: var(--f-card); overflow-y: auto; min-height: 0; }
-.front .face-body { font-size: clamp(24px, 4.2vw, 38px); line-height: 1.2; font-weight: 500; text-wrap: balance; }
-.back .face-body { font-size: clamp(17px, 2.4vw, 22px); line-height: 28px; padding-top: 18px; }
+.face-body.big { font-size: clamp(24px, 4.2vw, 38px); line-height: 1.2; font-weight: 500; text-wrap: balance; }
+.face-body.ruled { font-size: clamp(17px, 2.4vw, 22px); line-height: 28px; padding-top: 16px; }
 .face-foot { font-size: 12px; color: var(--muted); text-align: center; }
-kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--paper); }
-
+.card-tools { max-width: 640px; width: 100%; margin: 0 auto; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.star-btn[aria-pressed="true"] { color: var(--hard); border-color: var(--hard); }
 .grades { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; max-width: 640px; width: 100%; margin: 0 auto; }
 .grade { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 10px 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: 600; }
 .grade small { font-family: var(--f-mono); font-size: 10.5px; color: var(--muted); font-weight: 400; }
-.grade[data-g="0"] { color: var(--again); } .grade[data-g="1"] { color: var(--hard); }
-.grade[data-g="2"] { color: var(--good); } .grade[data-g="3"] { color: var(--easy); }
+.grade[data-g="0"] { color: var(--again); } .grade[data-g="1"] { color: var(--hard); } .grade[data-g="2"] { color: var(--good); } .grade[data-g="3"] { color: var(--easy); }
 .grade:hover { border-color: currentColor; }
 .grades[aria-disabled="true"] .grade { opacity: .4; pointer-events: none; }
-
-.progress { max-width: 640px; width: 100%; margin: 0 auto; display: flex; align-items: center; gap: 12px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.explain { max-width: 640px; width: 100%; margin: 0 auto; background: var(--sunk); border-radius: 8px; padding: 12px 16px; font-family: var(--f-card); font-size: 16.5px; line-height: 1.5; white-space: pre-wrap; }
+.explain .label { font-family: var(--f-display); display: block; margin-bottom: 4px; }
+.progress { max-width: 640px; width: 100%; margin: 0 auto; display: flex; align-items: center; gap: 12px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .bar { flex: 1; height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
 .bar i { display: block; height: 100%; background: var(--accent); transition: width .3s; }
-
-.done { max-width: 640px; margin: 0 auto; text-align: center; background: var(--surface); border: 1px dashed var(--line); border-radius: 8px; padding: 36px 24px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
-.done h3 { margin: 0; font-size: 22px; }
-.done p { margin: 0; color: var(--muted); max-width: 46ch; }
-
-/* Leitner tray */
-.tray { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
-.tray-head { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+.empty { max-width: 640px; width: 100%; margin: 0 auto; text-align: center; background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; padding: 34px 24px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.empty h3 { margin: 0; font-size: 22px; }
+.empty p { margin: 0; color: var(--muted); max-width: 48ch; }
 .boxes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; align-items: end; }
-.box { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
-.stack { height: 64px; display: flex; flex-direction: column-reverse; gap: 2px; justify-content: flex-start; }
+.stack { height: 60px; display: flex; flex-direction: column-reverse; gap: 2px; }
 .stack span { height: 4px; border-radius: 1px; background: var(--rule-blue); }
 .stack span.lead { background: var(--accent); }
-.box-label { font-family: var(--f-mono); font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; border-top: 2px solid var(--ink); padding-top: 4px; font-variant-numeric: tabular-nums; }
+.box-label { font-family: var(--f-mono); font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; border-top: 2px solid var(--ink); padding-top: 4px; font-variant-numeric: tabular-nums; margin-top: 6px; }
+
+/* Write */
+.write { max-width: 640px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.prompt-card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow); padding: 18px 24px 24px; display: flex; flex-direction: column; gap: 10px; }
+.prompt-card .q { font-family: var(--f-card); font-size: clamp(19px, 2.8vw, 25px); line-height: 1.3; text-align: center; text-wrap: balance; padding-block: 18px; }
+.answer-row { display: flex; gap: 8px; }
+.answer-row input { flex: 1; font-family: var(--f-card); font-size: 18px; padding: 10px 12px; }
+.verdict { border-radius: 8px; padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; border: 1px solid; }
+.verdict.ok { border-color: var(--good); color: var(--good); } .verdict.close { border-color: var(--hard); color: var(--hard); } .verdict.no { border-color: var(--again); color: var(--again); }
+.verdict strong { font-size: 16px; }
+.verdict .cmp { color: var(--ink); font-family: var(--f-card); font-size: 16px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 12px; }
+.verdict .cmp span:nth-child(odd) { font-family: var(--f-mono); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; padding-top: 4px; }
+.missed { margin: 0; padding-left: 18px; text-align: left; font-family: var(--f-card); }
+
+/* Match */
+.match-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-family: var(--f-mono); font-size: 13px; color: var(--muted); }
+.match-head .time { font-size: 22px; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.tiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr)); gap: 10px; }
+.mt { min-height: 96px; border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 10px 12px; font-family: var(--f-card); font-size: 15px; line-height: 1.3; text-align: left; box-shadow: var(--shadow); transition: transform .15s, opacity .3s, border-color .15s; }
+.mt.term { font-weight: 500; font-size: 17px; }
+.mt:hover { transform: translateY(-2px); }
+.mt.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.mt.bad { border-color: var(--again); box-shadow: 0 0 0 2px var(--again); }
+.mt.gone { opacity: 0; pointer-events: none; }
 
 /* Quiz */
 .quiz { max-width: 640px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
@@ -139,92 +225,123 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line)
 .choice.right { border-color: var(--good); box-shadow: inset 3px 0 0 var(--good); }
 .choice.wrong { border-color: var(--again); box-shadow: inset 3px 0 0 var(--again); }
 .choices[aria-disabled="true"] .choice { pointer-events: none; }
-.quiz-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
 
-/* Manage */
-.manage { display: flex; flex-direction: column; gap: 18px; }
-.add-form { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr) auto; gap: 10px; align-items: end; }
-@media (max-width: 620px) { .add-form { grid-template-columns: minmax(0,1fr); } }
-.add-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); font-weight: 600; }
-.add-form textarea { resize: vertical; min-height: 42px; font-family: var(--f-card); font-size: 16px; color: var(--ink); }
-details.bulk { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+/* Focus */
+.focus { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 300px); gap: 16px; }
+@media (max-width: 860px) { .focus { grid-template-columns: minmax(0, 1fr); } }
+.dial { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 24px 16px; }
+.dial-wrap { position: relative; width: min(280px, 100%); aspect-ratio: 1; }
+.dial-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.dial-read { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.dial-read .t { font-family: var(--f-mono); font-size: 50px; font-weight: 600; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.dial-read .p { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; }
+.tick-ring { stroke: var(--line); }
+.dial-fg { stroke: var(--rule-red); transition: stroke-dashoffset .25s linear; }
+.dial-fg.brk { stroke: var(--good); }
+.dots { display: flex; gap: 6px; }
+.dots i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--muted); }
+.dots i.on { background: var(--rule-red); border-color: var(--rule-red); }
+.task-input { width: min(360px, 100%); text-align: center; }
+.log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.log li { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dashed var(--line); padding-bottom: 6px; }
+.log li span:last-child { font-family: var(--f-mono); color: var(--muted); flex: none; }
+.durations { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.durations label { display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; color: var(--muted); font-weight: 600; }
+.durations input { font-family: var(--f-mono); width: 100%; }
+
+/* Edit cards */
+.add-form { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr) auto; gap: 10px; align-items: end; }
+@media (max-width: 640px) { .add-form { grid-template-columns: minmax(0,1fr); } }
+.add-form label, .stack-label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); font-weight: 600; }
+.add-form textarea { min-height: 42px; font-family: var(--f-card); font-size: 16px; color: var(--ink); }
 details.bulk summary { cursor: pointer; font-weight: 600; }
 details.bulk[open] summary { margin-bottom: 10px; }
-.bulk-body { display: flex; flex-direction: column; gap: 8px; }
-.bulk-body textarea { width: 100%; min-height: 110px; font-family: var(--f-mono); font-size: 13px; }
+.mono-area { width: 100%; min-height: 110px; font-family: var(--f-mono); font-size: 13px; }
 .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
 table { width: 100%; border-collapse: collapse; }
-th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; }
 tr:last-child td { border-bottom: 0; }
 td.term { font-family: var(--f-card); font-size: 16px; font-weight: 500; min-width: 140px; }
 td.def { font-family: var(--f-card); font-size: 15px; color: var(--muted); min-width: 200px; }
 td.boxn { font-family: var(--f-mono); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.icon-btn { border: 0; background: transparent; color: var(--muted); padding: 2px 6px; border-radius: 4px; }
-.icon-btn:hover { color: var(--again); background: var(--paper); }
-.danger-zone { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; z-index: 20; }
+td.acts { white-space: nowrap; text-align: right; }
+td textarea { width: 100%; font-family: var(--f-card); font-size: 15px; min-height: 60px; }
+.icon-btn { border: 0; background: transparent; color: var(--muted); padding: 3px 7px; border-radius: 5px; font-size: 13px; }
+.icon-btn:hover { color: var(--ink); background: var(--sunk); }
+.icon-btn.on { color: var(--hard); }
+.icon-btn.del:hover { color: var(--again); }
+.sr { position: absolute; left: -9999px; }
 
-@media (prefers-reduced-motion: reduce) { .card, .bar i { transition: none; } }
+/* Create with AI */
+.gen-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.gen-form textarea { min-height: 160px; font-family: var(--f-card); font-size: 16px; line-height: 1.5; }
+.gen-opts { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+.gen-opts .stack-label { min-width: 0; }
+.gen-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.gen-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.4fr); gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); align-items: start; }
+.gen-list li:last-child { border-bottom: 0; }
+@media (max-width: 560px) { .gen-list li { grid-template-columns: auto minmax(0, 1fr); } .gen-list li .b { grid-column: 2; } }
+.gen-list .f { font-family: var(--f-card); font-weight: 500; font-size: 16px; }
+.gen-list .b { font-family: var(--f-card); color: var(--muted); }
+.gen-list li.off .f, .gen-list li.off .b { opacity: .4; text-decoration: line-through; }
+.spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: spin .8s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.error-text { color: var(--again); font-size: 13.5px; margin: 0; }
+
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; z-index: 20; max-width: calc(100vw - 32px); }
+@media (prefers-reduced-motion: reduce) { .card, .bar i, .mt, .ring-fg, .dial-fg { transition: none; } .spinner { animation-duration: 3s; } }
 </style>
 
 <div class="app">
-  <header class="brand">
-    <h1 class="logo"><span class="logo-mark" aria-hidden="true"></span>Cardlit</h1>
-    <span class="streak" id="streak"></span>
+  <header class="topbar">
+    <a class="logo" href="#home"><span class="logo-mark" aria-hidden="true"></span>Cardlit</a>
+    <div class="top-meta">
+      <a class="chip timer" id="miniTimer" href="#focus" hidden></a>
+      <span class="chip" id="streakChip"></span>
+      <span class="chip" id="syncChip"><i class="dot"></i><span id="syncText">Saved in this browser</span></span>
+    </div>
   </header>
 
   <aside>
-    <p class="label">Decks</p>
-    <ul class="decks" id="decks"></ul>
-    <form class="new-deck" id="newDeckForm">
-      <input class="field" id="newDeckName" placeholder="New deck name" aria-label="New deck name" maxlength="60">
-      <button class="btn" type="submit">Add</button>
-    </form>
-    <p class="hint">Progress is saved in this browser only.</p>
+    <nav class="modes" id="nav" aria-label="Study modes"></nav>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <p class="label">Decks</p>
+      <ul class="decks" id="decks"></ul>
+      <form class="new-deck" id="newDeckForm">
+        <input class="field" id="newDeckName" placeholder="New deck name" aria-label="New deck name" maxlength="60">
+        <button class="btn" type="submit">Add</button>
+      </form>
+    </div>
   </aside>
 
-  <main>
-    <div class="deck-head">
-      <h2 id="deckTitle"></h2>
-      <div class="tabs" role="tablist" aria-label="Mode">
-        <button role="tab" id="tab-study" data-mode="study" aria-selected="true">Study</button>
-        <button role="tab" id="tab-quiz" data-mode="quiz" aria-selected="false">Quiz</button>
-        <button role="tab" id="tab-manage" data-mode="manage" aria-selected="false">Cards</button>
-      </div>
-    </div>
-
-    <section id="view-study" style="display:flex;flex-direction:column;gap:16px">
-      <div class="progress" id="studyProgress"><span id="progLabel"></span><div class="bar"><i id="progBar" style="width:0"></i></div><span id="progDue"></span></div>
-      <div id="studyArea"></div>
-    </section>
-
-    <section id="view-quiz" hidden></section>
-    <section id="view-manage" class="manage" hidden></section>
-
-    <section class="tray" aria-label="Leitner boxes">
-      <div class="tray-head">
-        <p class="label">Leitner boxes</p>
-        <span class="hint">Box 1 every day · 2 every 2 days · 3 every 4 · 4 every 8 · 5 every 16</span>
-      </div>
-      <div class="boxes" id="boxes"></div>
-    </section>
-  </main>
+  <main id="view" aria-live="polite"></main>
 </div>
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script>
 (() => {
+  /* ================= Utilities ================= */
   const DAY = 864e5;
-  const INTERVALS = [1, 2, 4, 8, 16]; // days per box
-  const KEY = "cardlit.v1";
-  const uid = () => Math.random().toString(36).slice(2, 10);
-  const today0 = () => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); };
-  const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  const INTERVALS = [1, 2, 4, 8, 16];
+  const LKEY = "cardlit.v2", PKEY = "cardlit.prefs";
+  const $ = id => document.getElementById(id);
+  const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-3);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  const pad = n => String(n).padStart(2, "0");
+  const startOfDay = (t = Date.now()) => { const d = new Date(t); d.setHours(0,0,0,0); return d; };
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const dayKey = d => { d = new Date(d); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+  const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+  const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const fmtTime = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${pad(Math.floor(s / 60))}:${pad(s % 60)}`; };
+  function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2200); }
 
-  const mk = (pairs) => pairs.map(([f, b]) => ({ id: uid(), f, b, box: 1, due: 0 }));
-  const SAMPLE = [
-    { id: uid(), name: "Cell Biology", sample: true, cards: mk([
+  /* ================= Data ================= */
+  const mkCards = pairs => pairs.map(([f, b]) => ({ id: uid(), f, b, box: 1, due: 0, star: false, seen: 0, lapses: 0 }));
+  const samples = () => [
+    { id: uid(), name: "Cell Biology", sample: true, best: null, cards: mkCards([
       ["Mitochondrion", "Organelle that makes ATP through cellular respiration; has its own circular DNA."],
       ["Ribosome", "Reads mRNA and assembles amino acids into proteins. Free in cytoplasm or bound to rough ER."],
       ["Golgi apparatus", "Modifies, sorts and packages proteins and lipids into vesicles for transport."],
@@ -234,283 +351,800 @@ td.boxn { font-family: var(--f-mono); font-size: 12px; white-space: nowrap; font
       ["Chloroplast", "Plant organelle where photosynthesis turns light, CO₂ and water into glucose and O₂."],
       ["Nucleolus", "Dense region inside the nucleus where ribosomal RNA is made and ribosome subunits assembled."],
     ])},
-    { id: uid(), name: "Spanish Verbs", sample: true, cards: mk([
-      ["tener", "to have — tengo, tienes, tiene"], ["hacer", "to do / to make — hago, haces, hace"],
-      ["poder", "to be able to — puedo, puedes, puede"], ["decir", "to say / to tell — digo, dices, dice"],
-      ["ir", "to go — voy, vas, va"], ["saber", "to know (facts) — sé, sabes, sabe"],
-      ["querer", "to want / to love — quiero, quieres, quiere"], ["salir", "to leave / to go out — salgo, sales, sale"],
+    { id: uid(), name: "Spanish Verbs", sample: true, best: null, cards: mkCards([
+      ["tener", "to have"], ["hacer", "to do / to make"], ["poder", "to be able to"], ["decir", "to say / to tell"],
+      ["ir", "to go"], ["saber", "to know (facts)"], ["querer", "to want / to love"], ["salir", "to leave / to go out"],
+      ["poner", "to put / to place"], ["venir", "to come"],
     ])},
-    { id: uid(), name: "World Capitals", sample: true, cards: mk([
+    { id: uid(), name: "World Capitals", sample: true, best: null, cards: mkCards([
       ["Australia", "Canberra"], ["Canada", "Ottawa"], ["Turkey", "Ankara"], ["Brazil", "Brasília"],
       ["Nigeria", "Abuja"], ["New Zealand", "Wellington"], ["Kazakhstan", "Astana"], ["Myanmar", "Naypyidaw"],
     ])},
   ];
 
-  let state;
-  try { state = JSON.parse(localStorage.getItem(KEY)); } catch (e) { state = null; }
-  if (!state || !Array.isArray(state.decks)) state = { decks: SAMPLE, current: SAMPLE[0].id, days: [] };
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
-
-  let mode = "study";
-  let session = null; // { queue: [cardId], done, total, flipped }
-  let quiz = null;
-
-  const deck = () => state.decks.find(d => d.id === state.current) || state.decks[0];
-  const dueCards = d => d.cards.filter(c => c.due <= Date.now());
-  const $ = id => document.getElementById(id);
-
-  function toast(msg) {
-    const t = $("toast"); t.textContent = msg; t.hidden = false;
-    clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 1800);
+  function normDeck(d) {
+    return { id: String(d.id || uid()), name: String(d.name || "Untitled deck"), sample: !!d.sample, best: d.best ?? null,
+      cards: (d.cards || []).map(c => ({ id: String(c.id || uid()), f: String(c.f ?? ""), b: String(c.b ?? ""), box: Math.min(5, Math.max(1, +c.box || 1)),
+        due: +c.due || 0, star: !!c.star, seen: +c.seen || 0, lapses: +c.lapses || 0 })) };
   }
+  function normState(s) {
+    const out = { decks: (s && Array.isArray(s.decks) ? s.decks : samples()).map(normDeck), current: s && s.current,
+      days: s && s.days && !Array.isArray(s.days) ? s.days : {}, goal: (s && +s.goal) || 30, focus: (s && s.focus) || { f: 25, s: 5, l: 15 } };
+    if (!out.decks.find(d => d.id === out.current)) out.current = out.decks[0] ? out.decks[0].id : null;
+    return out;
+  }
+  let state;
+  try { state = normState(JSON.parse(localStorage.getItem(LKEY))); } catch (e) { state = normState(null); }
+  let prefs = { reverse: false, writeDir: "term" };
+  try { Object.assign(prefs, JSON.parse(localStorage.getItem(PKEY)) || {}); } catch (e) {}
+  const savePrefs = () => { try { localStorage.setItem(PKEY, JSON.stringify(prefs)); } catch (e) {} };
+  const saveLocal = () => { try { localStorage.setItem(LKEY, JSON.stringify(state)); } catch (e) {} };
 
-  function markStudied() {
-    const d = today0();
-    if (!state.days.includes(d)) { state.days.push(d); state.days = state.days.slice(-400); }
+  const deck = () => state.decks.find(d => d.id === state.current) || null;
+  const isDue = c => c.due <= Date.now();
+  const mastery = d => d.cards.length ? Math.round(d.cards.reduce((s, c) => s + c.box - 1, 0) / (4 * d.cards.length) * 100) : 0;
+  function dayStat(key, create) {
+    if (state.days[key]) return state.days[key];
+    const blank = { r: 0, c: 0, m: 0, s: 0 };
+    if (create) state.days[key] = blank;
+    return blank;
   }
   function streak() {
-    const set = new Set(state.days); let n = 0; let d = today0();
-    if (!set.has(d)) d -= DAY;
-    while (set.has(d)) { n++; d -= DAY; }
+    const active = k => { const d = state.days[k]; return d && (d.r > 0 || d.m > 0); };
+    let d = startOfDay(), n = 0;
+    if (!active(dayKey(d))) d = addDays(d, -1);
+    while (active(dayKey(d))) { n++; d = addDays(d, -1); }
     return n;
   }
-
-  function renderDecks() {
-    $("decks").innerHTML = state.decks.map(d => {
-      const due = dueCards(d).length;
-      return `<li><button class="deck-btn" data-id="${d.id}" aria-current="${d.id === deck().id}">
-        <span class="deck-name">${esc(d.name)}</span><span class="due-pill ${due ? "has" : ""}" title="${due} due">${due}</span></button></li>`;
-    }).join("");
-    const d = deck();
-    $("deckTitle").innerHTML = d ? esc(d.name) + (d.sample ? '<span class="sample-tag">Sample</span>' : "") : "No decks";
-    const s = streak();
-    $("streak").textContent = s ? `${s}-day streak` : "Study today to start a streak";
+  function logPractice(correct) {
+    const d = dayStat(dayKey(Date.now()), true); d.r++; if (correct) d.c++;
+    touch("meta");
+  }
+  function applyGrade(card, g) {
+    card.seen++;
+    if (g === 0) { card.box = 1; card.due = 0; card.lapses++; }
+    else { card.box = Math.min(5, Math.max(1, card.box + [0, 0, 1, 2][g])); card.due = addDays(startOfDay(), INTERVALS[card.box - 1]).getTime(); }
   }
 
-  function renderBoxes() {
-    const d = deck(); const counts = [0,0,0,0,0];
-    (d ? d.cards : []).forEach(c => counts[c.box - 1]++);
-    const max = Math.max(12, ...counts);
-    $("boxes").innerHTML = counts.map((n, i) => {
-      const bars = Math.round((n / max) * 14);
-      return `<div class="box"><div class="stack" aria-hidden="true">${Array.from({ length: bars }, (_, j) => `<span class="${j === bars - 1 ? "lead" : ""}"></span>`).join("")}</div>
-        <div class="box-label"><span>Box ${i + 1}</span><span>${n}</span></div></div>`;
-    }).join("");
+  /* ================= Persistence: account sync via db, browser cache always ================= */
+  const S = { db: null, uid: null, sample: null, sync: "local" };
+  const dirty = new Set(), removed = new Set();
+  let flushT = null, flushing = false;
+  function setSync(s) {
+    S.sync = s;
+    const chip = $("syncChip");
+    chip.className = "chip " + ({ cloud: "cloud", saving: "saving", error: "error", full: "error" }[s] || "");
+    $("syncText").textContent = { local: "Saved in this browser", cloud: "Synced to your account", saving: "Saving…", error: "Sync paused · saved locally", full: "Account storage full" }[s];
   }
-
-  /* ---------- Study ---------- */
-  function startSession() {
-    const d = deck();
-    const q = d ? dueCards(d).sort((a, b) => a.box - b.box || a.due - b.due).map(c => c.id) : [];
-    session = { queue: q, done: 0, total: q.length, flipped: false };
+  function touch(...keys) {
+    keys.forEach(k => k && dirty.add(k));
+    saveLocal();
+    if (!S.db) return;
+    clearTimeout(flushT); flushT = setTimeout(flush, 800);
   }
-  function renderStudy() {
-    const d = deck();
-    if (!session) startSession();
-    const area = $("studyArea");
-    const pct = session.total ? Math.round((session.done / session.total) * 100) : 0;
-    $("progLabel").textContent = `${session.done} / ${session.total}`;
-    $("progBar").style.width = pct + "%";
-    $("progDue").textContent = `${session.queue.length} left`;
-    $("studyProgress").hidden = !session.total;
-
-    const card = d && d.cards.find(c => c.id === session.queue[0]);
-    if (!card) {
-      const next = d && d.cards.length ? Math.min(...d.cards.map(c => c.due)) : null;
-      const when = next ? new Date(next).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" }) : null;
-      area.innerHTML = `<div class="done">
-        <h3>${!d || !d.cards.length ? "This deck is empty" : session.total ? "Session complete" : "Nothing due right now"}</h3>
-        <p>${!d || !d.cards.length ? "Add your first card on the Cards tab." :
-          (session.total ? `You reviewed ${session.total} card${session.total === 1 ? "" : "s"}. ` : "") + `Next card comes due ${esc(when)}.`}</p>
-        ${d && d.cards.length ? `<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
-          <button class="btn primary" id="cramBtn">Review all ${d.cards.length} anyway</button>
-          <button class="btn" data-goto="quiz">Take a quiz</button></div>` : `<button class="btn primary" data-goto="manage">Add cards</button>`}
-      </div>`;
+  const metaBody = () => {
+    const keys = Object.keys(state.days).sort().slice(-400), days = {};
+    keys.forEach(k => days[k] = state.days[k]);
+    return { v: 2, order: state.decks.map(d => d.id), current: state.current, days, goal: state.goal, focus: state.focus };
+  };
+  const deckBody = d => ({ name: d.name, sample: d.sample, best: d.best, cards: d.cards });
+  async function flush() {
+    if (!S.db || flushing || (!dirty.size && !removed.size)) return;
+    flushing = true; setSync("saving");
+    const col = S.db.collection("data/users/" + S.uid);
+    let failed = null;
+    for (const id of [...removed]) {
+      try { await col.doc("deck-" + id).delete(); removed.delete(id); } catch (e) { failed = e; break; }
+    }
+    if (!failed) for (const k of [...dirty]) {
+      dirty.delete(k);
+      try {
+        if (k === "meta") await col.doc("meta").set(metaBody());
+        else { const d = state.decks.find(x => x.id === k); if (d) await col.doc("deck-" + k).set(deckBody(d)); }
+      } catch (e) { failed = e; if (e && e.code !== "invalid_argument") dirty.add(k); break; }
+    }
+    flushing = false;
+    if (failed) {
+      setSync(failed.code === "quota_exceeded" ? "full" : "error");
+      if (failed.code === "unavailable") { clearTimeout(flushT); flushT = setTimeout(flush, 4000 + Math.random() * 2000); }
+      if (failed.code === "revoked" || failed.code === "invalid_argument") S.db = null;
       return;
     }
-    area.innerHTML = `
-      <div class="stage"><button class="card ${session.flipped ? "flipped" : ""}" id="theCard" aria-label="Flip card">
-        <div class="face front">
-          <div class="face-meta"><span>${esc(d.name)}</span><span>Box ${card.box}</span></div>
-          <div class="face-body">${esc(card.f)}</div>
-          <div class="face-foot">Tap or press <kbd>Space</kbd> to flip</div>
+    setSync("cloud");
+    if (dirty.size || removed.size) { clearTimeout(flushT); flushT = setTimeout(flush, 800); }
+  }
+  async function connectAccount() {
+    if (!window.claude || !window.claude.use) return;
+    try {
+      const [db, user] = await Promise.all([claude.use("db"), claude.use("user")]);
+      if (!db || !user) return;
+      const id = await user.id();
+      if (!id) return;
+      const snap = await db.collection("data/users/" + id).limit(1000).get();
+      S.db = db; S.uid = id;
+      if (snap.size) {
+        const docs = {}; snap.docs.forEach(x => docs[x.id] = x.data());
+        const meta = docs.meta || {};
+        const decks = Object.keys(docs).filter(k => k.startsWith("deck-")).map(k => normDeck({ id: k.slice(5), ...docs[k] }));
+        const order = meta.order || [];
+        decks.sort((a, b) => (order.indexOf(a.id) + 1 || 1e9) - (order.indexOf(b.id) + 1 || 1e9));
+        state = normState({ decks, current: meta.current, days: meta.days, goal: meta.goal, focus: meta.focus });
+        saveLocal(); resetModes(); render();
+        setSync("cloud");
+      } else {
+        dirty.add("meta"); state.decks.forEach(d => dirty.add(d.id));
+        setSync("cloud"); flush();
+      }
+    } catch (e) { S.db = null; setSync("local"); }
+  }
+  async function connectAI() {
+    if (!window.claude || !window.claude.use) return;
+    try { const s = await claude.use("sample"); if (s) { S.sample = s; render(); } } catch (e) {}
+  }
+
+  /* ================= Routing ================= */
+  const ROUTES = [
+    ["home", "Overview", "G"], ["study", "Flashcards", "F"], ["write", "Write", "W"], ["match", "Match", "M"],
+    ["quiz", "Quiz", "Q"], ["focus", "Focus timer", "T"], ["cards", "Edit cards", "E"], ["create", "Create with AI", ""],
+  ];
+  const route = () => { const h = location.hash.slice(1); return ROUTES.some(r => r[0] === h) ? h : "home"; };
+  let lastRoute = null;
+
+  /* Per-mode session state, reset when the deck or route changes */
+  let study = null, wr = null, mt = null, qz = null, editing = null, cardFilter = "", gen = null, delConfirm = false;
+  function resetModes() { study = null; wr = null; mt = null; qz = null; editing = null; delConfirm = false; clearInterval(matchTimer); }
+
+  function renderNav() {
+    const r = route();
+    $("nav").innerHTML = ROUTES.filter(([k]) => k !== "create" || S.sample).map(([k, label, key]) =>
+      `<a href="#${k}" ${k === r ? 'aria-current="page"' : ""}><span>${label}</span>${k === "create" ? '<span class="ai-tag">AI</span>' : key ? `<span class="k">${key}</span>` : ""}</a>`).join("");
+    $("decks").innerHTML = state.decks.map(d => {
+      const due = d.cards.filter(isDue).length;
+      return `<li><button class="deck-btn" data-act="pickDeck" data-id="${d.id}" aria-current="${d.id === state.current}">
+        <span class="deck-name">${esc(d.name)}</span><span class="pill ${due ? "has" : ""}" title="${plural(due, "card")} due">${due}</span></button></li>`;
+    }).join("");
+    const s = streak();
+    $("streakChip").textContent = s ? `${s}-day streak` : "No streak yet";
+  }
+
+  function render() {
+    const r = route();
+    if (r !== lastRoute) { if (lastRoute !== null) resetModes(); lastRoute = r; }
+    renderNav();
+    const v = $("view");
+    ({ home: viewHome, study: viewStudy, write: viewWrite, match: viewMatch, quiz: viewQuiz, focus: viewFocus, cards: viewCards, create: viewCreate }[r])(v);
+  }
+
+  const head = (title, sub, right = "") => `<div class="view-head"><div><h2>${title}</h2>${sub ? `<p class="sub">${sub}</p>` : ""}</div>${right}</div>`;
+  const deckTitle = d => d ? esc(d.name) + (d.sample ? '<span class="sample-tag">Sample</span>' : "") : "No deck";
+  const noDeck = () => `<div class="empty"><h3>Create a deck to begin</h3><p>Name a new deck in the sidebar, then add cards by hand or generate them from your notes.</p></div>`;
+
+  /* ================= Overview ================= */
+  function viewHome(v) {
+    const all = state.decks.flatMap(d => d.cards);
+    const due = all.filter(isDue).length;
+    const mastered = all.filter(c => c.box === 5).length;
+    const today = dayStat(dayKey(Date.now()));
+    const pct = Math.min(1, today.r / state.goal);
+    const R = 26, C = 2 * Math.PI * R;
+    const s = streak();
+
+    // 7-day forecast
+    const t0 = startOfDay();
+    const fc = Array.from({ length: 7 }, (_, i) => {
+      const a = addDays(t0, i).getTime(), b = addDays(t0, i + 1).getTime();
+      return { label: i === 0 ? "Today" : addDays(t0, i).toLocaleDateString(undefined, { weekday: "short" }), n: all.filter(c => i === 0 ? c.due < b : c.due >= a && c.due < b).length };
+    });
+    const fmax = Math.max(4, ...fc.map(x => x.n));
+    const W = 420, H = 170, top = 22, bottom = 26, bw = 40, step = W / 7;
+    const y = n => top + (H - top - bottom) * (1 - n / fmax);
+    const chart = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Cards coming due over the next 7 days">
+      <line class="grid" x1="0" x2="${W}" y1="${H - bottom}" y2="${H - bottom}"></line>
+      ${fc.map((x, i) => { const cx = step * i + step / 2, yy = y(x.n), hgt = Math.max(2, H - bottom - yy);
+        return `<rect class="col ${x.n ? "" : "zero"}" x="${cx - bw / 2}" y="${H - bottom - hgt}" width="${bw}" height="${hgt}" rx="3"></rect>
+          <text class="val" x="${cx}" y="${H - bottom - hgt - 6}" text-anchor="middle">${x.n}</text>
+          <text x="${cx}" y="${H - 8}" text-anchor="middle">${x.label}</text>`; }).join("")}
+    </svg>`;
+
+    // 20-week activity heatmap
+    const weeks = 20, todayD = startOfDay();
+    const start = addDays(todayD, -(todayD.getDay() + 7 * (weeks - 1)));
+    let cells = "";
+    for (let i = 0; i < weeks * 7; i++) {
+      const d = addDays(start, i), k = dayKey(d), st = state.days[k], n = st ? st.r + Math.round(st.m / 5) : 0;
+      const lvl = d > todayD ? "fut" : n === 0 ? "" : n < 10 ? "l1" : n < 25 ? "l2" : n < 50 ? "l3" : "l4";
+      cells += `<i class="${lvl} ${k === dayKey(todayD) ? "today" : ""}" title="${d.toLocaleDateString()}: ${st ? `${plural(st.r, "card")}, ${st.m} focus min` : "no study"}"></i>`;
+    }
+    let wr_ = 0, wc = 0, wm = 0;
+    for (let i = 0; i < 7; i++) { const st = state.days[dayKey(addDays(todayD, -i))]; if (st) { wr_ += st.r; wc += st.c; wm += st.m; } }
+
+    v.innerHTML = head(greeting(), due ? `${plural(due, "card")} ${due === 1 ? "is" : "are"} due across your decks.` : "You're all caught up. New reviews unlock tomorrow.",
+      due ? `<a class="btn primary" href="#study" data-act="studyMostDue">Study now</a>` : "") + `
+      <div class="tiles">
+        <div class="tile goal">
+          <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true" style="transform:rotate(-90deg);flex:none">
+            <circle class="ring-bg" cx="32" cy="32" r="${R}" fill="none" stroke-width="7"></circle>
+            <circle class="ring-fg" cx="32" cy="32" r="${R}" fill="none" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - pct)}"></circle>
+          </svg>
+          <div style="min-width:0"><p class="label">Today</p><div class="num">${today.r}<small> / ${state.goal}</small></div>
+            <label class="goal-edit" for="goalInput">Daily goal <input class="field" id="goalInput" type="number" min="5" max="500" step="5" value="${state.goal}"></label></div>
         </div>
-        <div class="face back">
-          <div class="face-meta"><span>${esc(card.f)}</span><span>Answer</span></div>
-          <div class="face-body">${esc(card.b)}</div>
+        <div class="tile"><p class="label">Due now</p><div class="num">${due}</div><p class="hint">across ${plural(state.decks.length, "deck")}</p></div>
+        <div class="tile"><p class="label">Streak</p><div class="num">${s}<small> ${s === 1 ? "day" : "days"}</small></div><p class="hint">${today.r || today.m ? "Today counts" : "Study today to keep it"}</p></div>
+        <div class="tile"><p class="label">Mastered</p><div class="num">${mastered}<small> / ${all.length}</small></div><p class="hint">cards in box 5</p></div>
+      </div>
+      <div class="two">
+        <section class="panel">
+          <div class="panel-head"><h3>Activity</h3>
+            <span class="legend">Less <i style="background:var(--sunk)"></i><i class="l1" style="background:color-mix(in srgb, var(--accent) 28%, var(--sunk))"></i><i style="background:color-mix(in srgb, var(--accent) 52%, var(--sunk))"></i><i style="background:color-mix(in srgb, var(--accent) 76%, var(--sunk))"></i><i style="background:var(--accent)"></i> More</span></div>
+          <div class="heat-wrap"><div class="heat">${cells}</div></div>
+          <div class="week-stats"><span>Last 7 days</span><span><b>${wr_}</b> cards practiced</span><span><b>${wr_ ? Math.round(wc / wr_ * 100) : 0}%</b> correct</span><span><b>${wm}</b> focus min</span></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h3>Coming due</h3><span class="hint">next 7 days</span></div>
+          ${chart}
+        </section>
+      </div>
+      <section class="panel">
+        <div class="panel-head"><h3>Decks</h3><a class="btn small ghost" href="#cards">Manage cards</a></div>
+        <div class="deck-table">${state.decks.length ? state.decks.map(d => {
+          const n = d.cards.filter(isDue).length, m = mastery(d);
+          return `<div class="deck-row"><div class="nm">${esc(d.name)}<small>${plural(d.cards.length, "card")}${d.sample ? " · sample" : ""}</small></div>
+            <div class="mbar-wrap"><div class="mbar"><i style="width:${m}%"></i></div><span>${m}% mastered</span></div>
+            <div class="due-col ${n ? "has" : ""}">${n} due</div>
+            <a class="btn small" href="#study" data-act="openDeck" data-id="${d.id}">Study</a></div>`;
+        }).join("") : `<p class="hint">No decks yet.</p>`}</div>
+      </section>`;
+  }
+  function greeting() { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; }
+
+  /* ================= Flashcards (Leitner) ================= */
+  function startStudy(mode) {
+    const d = deck(); if (!d) return null;
+    let ids;
+    if (mode === "all") ids = shuffle(d.cards).map(c => c.id);
+    else if (mode === "starred") ids = shuffle(d.cards.filter(c => c.star)).map(c => c.id);
+    else ids = d.cards.filter(isDue).sort((a, b) => a.box - b.box || a.due - b.due).map(c => c.id);
+    study = { queue: ids, done: 0, total: ids.length, flipped: false, mode: mode || "due", explain: null };
+  }
+  function viewStudy(v) {
+    const d = deck();
+    if (!d) { v.innerHTML = head("Flashcards") + noDeck(); return; }
+    if (!study) startStudy();
+    const card = d.cards.find(c => c.id === study.queue[0]);
+    const right = `<div class="seg" role="group" aria-label="Card direction">
+      <button data-act="dir" data-v="0" aria-pressed="${!prefs.reverse}">Term first</button><button data-act="dir" data-v="1" aria-pressed="${prefs.reverse}">Answer first</button></div>`;
+    let body;
+    if (!card) {
+      const next = d.cards.length ? Math.min(...d.cards.map(c => c.due)) : null;
+      const starred = d.cards.filter(c => c.star).length;
+      body = `<div class="empty">
+        <h3>${!d.cards.length ? "This deck is empty" : study.total ? "Session complete" : "Nothing due right now"}</h3>
+        <p>${!d.cards.length ? "Add cards on the Edit cards page, or generate them from your notes." :
+          (study.total ? `You reviewed ${plural(study.total, "card")}. ` : "") + `Next card comes due ${next > Date.now() ? esc(new Date(next).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })) : "now"}.`}</p>
+        <div class="row" style="justify-content:center">${d.cards.length ? `
+          <button class="btn primary" data-act="cram" data-v="all">Review all ${d.cards.length} anyway</button>
+          ${starred ? `<button class="btn" data-act="cram" data-v="starred">Review ${starred} starred</button>` : ""}
+          <a class="btn" href="#write">Practice in Write</a>` : `<a class="btn primary" href="#cards">Add cards</a>`}</div></div>`;
+    } else {
+      const front = prefs.reverse ? card.b : card.f, back = prefs.reverse ? card.f : card.b;
+      const pct = study.total ? Math.round(study.done / study.total * 100) : 0;
+      const ex = study.explain && study.explain.id === card.id ? study.explain : null;
+      body = `
+        <div class="progress"><span>${study.done} / ${study.total}</span><div class="bar"><i style="width:${pct}%"></i></div><span>${study.queue.length} left</span></div>
+        <div class="stage"><div class="card ${study.flipped ? "flipped" : ""}" id="theCard" role="button" tabindex="0" aria-label="Flip card" data-act="flip">
+          <div class="face front">
+            <div class="face-meta"><span>${esc(d.name)}</span><span>Box ${card.box}${card.star ? " · ★" : ""}</span></div>
+            <div class="face-body ${front.length > 60 ? "ruled" : "big"}">${esc(front)}</div>
+            <div class="face-foot">Tap or press <kbd>Space</kbd> to flip</div>
+          </div>
+          <div class="face back">
+            <div class="face-meta"><span>${esc(front)}</span><span>Answer</span></div>
+            <div class="face-body ruled">${esc(back)}</div>
+          </div>
+        </div></div>
+        <div class="card-tools">
+          <div class="row"><button class="btn small star-btn" data-act="star" aria-pressed="${card.star}">${card.star ? "★ Starred" : "☆ Star"}</button>
+            ${card.seen ? `<span class="hint">Seen ${card.seen}× · missed ${card.lapses}×</span>` : `<span class="hint">New card</span>`}</div>
+          ${S.sample ? `<button class="btn small" data-act="explain" ${ex && ex.loading ? "disabled" : ""}>${ex && ex.loading ? '<span class="spinner"></span> Explaining' : "Explain this card"}</button>` : ""}
         </div>
-      </button></div>
-      <div class="grades" id="grades" aria-disabled="${!session.flipped}" style="margin-top:16px">
-        ${[["Again","Box 1"],["Hard","Stay"],["Good","+1 box"],["Easy","+2 boxes"]].map(([l, s], i) =>
-          `<button class="grade" data-g="${i}">${l}<small><kbd>${i + 1}</kbd> ${s}</small></button>`).join("")}
-      </div>`;
+        ${ex ? `<div class="explain"><span class="label">Explanation</span><span id="explainText">${esc(ex.text || (ex.error ? "" : "Thinking…"))}</span>${ex.error ? `<span class="error-text">${esc(ex.error)}</span>` : ""}</div>` : ""}
+        <div class="grades" id="grades" aria-disabled="${!study.flipped}">
+          ${[["Again", "Box 1"], ["Hard", "Stay"], ["Good", "+1 box"], ["Easy", "+2 boxes"]].map(([l, s], i) =>
+            `<button class="grade" data-act="grade" data-g="${i}">${l}<small><kbd>${i + 1}</kbd> ${s}</small></button>`).join("")}
+        </div>`;
+    }
+    const counts = [0,0,0,0,0]; d.cards.forEach(c => counts[c.box - 1]++);
+    const max = Math.max(12, ...counts);
+    const tray = `<section class="panel" aria-label="Leitner boxes"><div class="panel-head"><h3>Leitner boxes</h3>
+      <span class="hint">Box 1 daily · 2 every 2 days · 3 every 4 · 4 every 8 · 5 every 16</span></div>
+      <div class="boxes">${counts.map((n, i) => { const bars = Math.round(n / max * 14);
+        return `<div><div class="stack" aria-hidden="true">${Array.from({ length: bars }, (_, j) => `<span class="${j === bars - 1 ? "lead" : ""}"></span>`).join("")}</div>
+          <div class="box-label"><span>Box ${i + 1}</span><span>${n}</span></div></div>`; }).join("")}</div></section>`;
+    v.innerHTML = head(deckTitle(d), study.mode === "due" ? "Spaced review of due cards" : study.mode === "starred" ? "Starred cards" : "Reviewing every card", right) +
+      `<div style="display:flex;flex-direction:column;gap:14px">${body}</div>` + tray;
   }
   function flip() {
-    if (!session || !session.queue.length) return;
-    session.flipped = !session.flipped;
-    $("theCard").classList.toggle("flipped", session.flipped);
-    $("grades").setAttribute("aria-disabled", String(!session.flipped));
+    if (!study || !study.queue.length) return;
+    study.flipped = !study.flipped;
+    $("theCard").classList.toggle("flipped", study.flipped);
+    $("grades").setAttribute("aria-disabled", String(!study.flipped));
   }
   function grade(g) {
-    if (!session || !session.flipped) return;
-    const d = deck(); const card = d.cards.find(c => c.id === session.queue[0]);
-    session.queue.shift();
-    if (g === 0) { card.box = 1; card.due = 0; session.queue.splice(Math.min(3, session.queue.length), 0, card.id); }
-    else {
-      card.box = Math.min(5, Math.max(1, card.box + [0, 0, 1, 2][g]));
-      card.due = today0() + INTERVALS[card.box - 1] * DAY;
-      session.done++;
+    if (!study || !study.flipped || !study.queue.length) return;
+    const d = deck(), card = d.cards.find(c => c.id === study.queue[0]);
+    study.queue.shift();
+    applyGrade(card, g);
+    if (g === 0) study.queue.splice(Math.min(3, study.queue.length), 0, card.id); else study.done++;
+    study.flipped = false; study.explain = null;
+    logPractice(g > 0); touch(d.id);
+    render();
+  }
+  async function explain() {
+    const d = deck(), card = study && d.cards.find(c => c.id === study.queue[0]);
+    if (!card || !S.sample) return;
+    const ex = study.explain = { id: card.id, text: "", loading: true };
+    render();
+    try {
+      await S.sample(`You are a patient tutor. A student is studying the flashcard below from a deck called "${d.name}". Explain the idea in 3 or 4 short sentences a student can remember, then give one concrete example or mnemonic. Plain text only, no markdown, no headings.\n\nFront: ${card.f}\nBack: ${card.b}`,
+        { modelTier: "quick", onText: ({ text }) => { ex.text = text; const el = $("explainText"); if (el && study.explain === ex) el.textContent = text; } });
+    } catch (e) {
+      ex.error = e && e.code === "not_granted" ? "AI explanations need your permission. Allow it from the artifact's Permissions menu to use this." :
+        e && e.code === "rate_limited" ? "Too many requests right now. Wait a minute and try again." : "Couldn't get an explanation. Try again.";
     }
-    session.flipped = false;
-    markStudied(); save();
-    renderStudy(); renderDecks(); renderBoxes();
+    ex.loading = false;
+    if (study && study.explain === ex && route() === "study") render();
   }
 
-  /* ---------- Quiz ---------- */
-  function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-  function newQuiz() {
-    const d = deck();
-    quiz = { order: shuffle(d.cards.map(c => c.id)).slice(0, 10), i: 0, score: 0, picked: null };
+  /* ================= Write ================= */
+  const norm = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\(.*?\)/g, "").replace(/[^a-z0-9\s/]/g, " ").replace(/\s+/g, " ").trim();
+  function lev(a, b) {
+    if (a === b) return 0; const m = a.length, n = b.length; if (!m || !n) return m || n;
+    let prev = Array.from({ length: n + 1 }, (_, i) => i);
+    for (let i = 1; i <= m; i++) { const cur = [i]; for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = cur; }
+    return prev[n];
   }
-  function renderQuiz() {
-    const v = $("view-quiz"); const d = deck();
-    if (!d || d.cards.length < 4) {
-      v.innerHTML = `<div class="done"><h3>Quiz needs at least 4 cards</h3><p>This deck has ${d ? d.cards.length : 0}. Add a few more on the Cards tab.</p><button class="btn primary" data-goto="manage">Add cards</button></div>`;
+  function judge(input, answer) {
+    const a = norm(input), opts = answer.split(/\s*\/\s*|\s*;\s*/).map(norm).concat([norm(answer)]).filter(Boolean);
+    if (!a) return "no";
+    let best = 0;
+    for (const o of opts) { const sim = 1 - lev(a, o) / Math.max(a.length, o.length); best = Math.max(best, sim); if (o.includes(a) && a.length >= Math.min(6, o.length)) best = Math.max(best, .9); }
+    return best >= .88 ? "ok" : best >= .65 ? "close" : "no";
+  }
+  function startWrite() {
+    const d = deck(); if (!d) return;
+    const dueFirst = shuffle(d.cards.filter(isDue)).concat(shuffle(d.cards.filter(c => !isDue(c))));
+    wr = { ids: dueFirst.slice(0, 12).map(c => c.id), i: 0, answer: "", verdict: null, results: [] };
+  }
+  function viewWrite(v) {
+    const d = deck();
+    if (!d) { v.innerHTML = head("Write") + noDeck(); return; }
+    const right = `<div class="seg" role="group" aria-label="What you type">
+      <button data-act="writeDir" data-v="term" aria-pressed="${prefs.writeDir === "term"}">Type the term</button><button data-act="writeDir" data-v="def" aria-pressed="${prefs.writeDir === "def"}">Type the answer</button></div>`;
+    if (!d.cards.length) { v.innerHTML = head(deckTitle(d), "Recall by typing") + `<div class="empty"><h3>No cards to practice</h3><p>Add cards first.</p><a class="btn primary" href="#cards">Add cards</a></div>`; return; }
+    if (!wr) startWrite();
+    if (wr.i >= wr.ids.length) {
+      const ok = wr.results.filter(r => r.v !== "no").length, missed = wr.results.filter(r => r.v === "no");
+      v.innerHTML = head(deckTitle(d), "Recall by typing", right) + `<div class="empty"><h3>${ok} of ${wr.results.length} recalled</h3>
+        ${missed.length ? `<p>Missed cards went back to box 1 so you'll see them again tomorrow:</p><ul class="missed">${missed.map(r => `<li>${esc(r.f)} — ${esc(r.b)}</li>`).join("")}</ul>` : "<p>Every card recalled. Those cards moved up a box.</p>"}
+        <div class="row" style="justify-content:center"><button class="btn primary" data-act="writeAgain">Another round</button><a class="btn" href="#match">Play Match</a></div></div>`;
       return;
     }
-    if (!quiz) newQuiz();
-    if (quiz.i >= quiz.order.length) {
-      const pct = Math.round(quiz.score / quiz.order.length * 100);
-      v.innerHTML = `<div class="done"><h3>${quiz.score} of ${quiz.order.length} correct</h3>
-        <p>${pct >= 90 ? "Excellent recall. These cards are ready to move up a box." : pct >= 60 ? "Solid. Run a study session to firm up the misses." : "Worth another study session before the next quiz."}</p>
-        <button class="btn primary" id="retryQuiz">New quiz</button></div>`;
-      return;
-    }
-    const card = d.cards.find(c => c.id === quiz.order[quiz.i]);
-    if (!quiz.choices) {
-      const others = shuffle(d.cards.filter(c => c.id !== card.id)).slice(0, 3);
-      quiz.choices = shuffle([card, ...others]).map(c => ({ id: c.id, text: c.b }));
-    }
-    const answered = quiz.picked !== null;
-    v.innerHTML = `<div class="quiz">
-      <div class="quiz-q">${esc(card.f)}</div>
-      <div class="choices" aria-disabled="${answered}">
-        ${quiz.choices.map((c, i) => {
-          const cls = answered ? (c.id === card.id ? "right" : c.id === quiz.picked ? "wrong" : "") : "";
-          return `<button class="choice ${cls}" data-pick="${c.id}"><span class="k">${"ABCD"[i]}</span><span>${esc(c.text)}</span></button>`;
-        }).join("")}
+    const card = d.cards.find(c => c.id === wr.ids[wr.i]);
+    if (!card) { wr.i++; return viewWrite(v); }
+    const prompt = prefs.writeDir === "term" ? card.b : card.f, answer = prefs.writeDir === "term" ? card.f : card.b;
+    const vd = wr.verdict;
+    v.innerHTML = head(deckTitle(d), "Recall by typing", right) + `<div class="write">
+      <div class="progress"><span>${wr.i + 1} / ${wr.ids.length}</span><div class="bar"><i style="width:${wr.i / wr.ids.length * 100}%"></i></div><span>${wr.results.filter(r => r.v !== "no").length} right</span></div>
+      <div class="prompt-card"><div class="face-meta"><span>${prefs.writeDir === "term" ? "Definition" : "Term"}</span><span>Box ${card.box}</span></div>
+        <div class="q">${esc(prompt)}</div>
+        <form class="answer-row" id="writeForm" autocomplete="off">
+          <input class="field" id="writeInput" placeholder="${prefs.writeDir === "term" ? "Type the term" : "Type the answer"}" value="${esc(wr.answer)}" ${vd ? "readonly" : ""} aria-label="Your answer">
+          ${vd ? "" : `<button class="btn primary" type="submit">Check</button>`}
+        </form>
+        ${vd ? "" : `<div class="row" style="justify-content:space-between"><span class="hint">Press <kbd>Enter</kbd> to check. Accents and capitals don't matter.</span><button class="btn small ghost" data-act="writeSkip" type="button">I don't know</button></div>`}
       </div>
-      <div class="quiz-foot"><span>Question ${quiz.i + 1} of ${quiz.order.length} · Score ${quiz.score}</span>
-        ${answered ? `<button class="btn primary" id="nextQ">${quiz.i + 1 === quiz.order.length ? "See results" : "Next question"} <kbd>Enter</kbd></button>` : `<span>Keys <kbd>A</kbd>–<kbd>D</kbd></span>`}</div>
+      ${vd ? `<div class="verdict ${vd}"><strong>${{ ok: "Correct", close: "Almost. Counted as right, watch the spelling.", no: "Not quite" }[vd]}</strong>
+        <div class="cmp"><span>You</span><span>${esc(wr.answer) || "<em>(no answer)</em>"}</span><span>Answer</span><span>${esc(answer)}</span></div></div>
+        <div class="row" style="justify-content:flex-end">${vd === "no" && wr.answer ? `<button class="btn ghost" data-act="writeOverride">I was right</button>` : ""}
+        <button class="btn primary" data-act="writeNext" id="writeNext">Continue <kbd>Enter</kbd></button></div>` : ""}
+    </div>`;
+    const inp = $("writeInput"); if (inp && !vd) inp.focus(); else if ($("writeNext")) $("writeNext").focus();
+  }
+  function writeCheck(skip) {
+    if (!wr || wr.verdict) return;
+    const d = deck(), card = d.cards.find(c => c.id === wr.ids[wr.i]);
+    wr.answer = skip ? "" : ($("writeInput").value || "").trim();
+    if (!skip && !wr.answer) return;
+    wr.verdict = skip ? "no" : judge(wr.answer, prefs.writeDir === "term" ? card.f : card.b);
+    render();
+  }
+  function writeNext() {
+    if (!wr || !wr.verdict) return;
+    const d = deck(), card = d.cards.find(c => c.id === wr.ids[wr.i]);
+    const g = wr.verdict === "ok" ? 2 : wr.verdict === "close" ? 1 : 0;
+    applyGrade(card, g); logPractice(g > 0); touch(d.id);
+    wr.results.push({ v: wr.verdict, f: card.f, b: card.b });
+    wr.i++; wr.answer = ""; wr.verdict = null;
+    render();
+  }
+
+  /* ================= Match ================= */
+  let matchTimer = null;
+  function startMatch() {
+    const d = deck(); const picks = shuffle(d.cards).slice(0, 6);
+    const tiles = shuffle(picks.flatMap(c => [{ cid: c.id, kind: "f", text: c.f }, { cid: c.id, kind: "b", text: c.b }]));
+    mt = { tiles, sel: null, gone: new Set(), bad: null, start: null, end: null, misses: 0, pairs: picks.length };
+  }
+  function viewMatch(v) {
+    const d = deck();
+    if (!d) { v.innerHTML = head("Match") + noDeck(); return; }
+    if (d.cards.length < 3) { v.innerHTML = head(deckTitle(d), "Pair each term with its answer") + `<div class="empty"><h3>Match needs at least 3 cards</h3><p>This deck has ${d.cards.length}.</p><a class="btn primary" href="#cards">Add cards</a></div>`; return; }
+    if (!mt) startMatch();
+    const best = d.best ? (d.best / 1000).toFixed(1) + "s" : "none yet";
+    if (mt.end) {
+      const t = (mt.end - mt.start) / 1000;
+      v.innerHTML = head(deckTitle(d), "Pair each term with its answer") + `<div class="empty"><h3>${t.toFixed(1)} seconds</h3>
+        <p>${mt.newBest ? "New personal best for this deck." : `Best: ${best}.`} ${mt.misses ? `${plural(mt.misses, "wrong pair")} (+1s each, included).` : "No wrong pairs."}</p>
+        <button class="btn primary" data-act="matchAgain">Play again</button></div>`;
+      return;
+    }
+    const el = mt.start ? Date.now() - mt.start + mt.misses * 1000 : 0;
+    v.innerHTML = head(deckTitle(d), "Pair each term with its answer. Wrong pairs add one second.") + `
+      <div class="match-head"><span class="time" id="mtTime">${(el / 1000).toFixed(1)}s</span><span>${mt.gone.size / 2} / ${mt.pairs} pairs · best ${best}</span>
+        <button class="btn small ghost" data-act="matchAgain">Shuffle</button></div>
+      <div class="tiles-grid">${mt.tiles.map((t, i) => `<button class="mt ${t.kind === "f" ? "term" : ""} ${mt.sel === i ? "sel" : ""} ${mt.bad && mt.bad.includes(i) ? "bad" : ""} ${mt.gone.has(i) ? "gone" : ""}"
+        data-act="tile" data-i="${i}" ${mt.gone.has(i) ? 'tabindex="-1" aria-hidden="true"' : ""}>${esc(t.text.length > 120 ? t.text.slice(0, 117) + "…" : t.text)}</button>`).join("")}</div>`;
+  }
+  function tapTile(i) {
+    if (!mt || mt.gone.has(i) || mt.end) return;
+    if (!mt.start) { mt.start = Date.now(); clearInterval(matchTimer); matchTimer = setInterval(() => { const el = $("mtTime"); if (el && mt && mt.start && !mt.end) el.textContent = ((Date.now() - mt.start + mt.misses * 1000) / 1000).toFixed(1) + "s"; else if (!el) clearInterval(matchTimer); }, 100); }
+    mt.bad = null;
+    if (mt.sel === null) mt.sel = i;
+    else if (mt.sel === i) mt.sel = null;
+    else {
+      const a = mt.tiles[mt.sel], b = mt.tiles[i];
+      if (a.cid === b.cid && a.kind !== b.kind) { mt.gone.add(mt.sel); mt.gone.add(i); }
+      else { mt.bad = [mt.sel, i]; mt.misses++; }
+      mt.sel = null;
+      if (mt.gone.size === mt.tiles.length) {
+        clearInterval(matchTimer); mt.end = Date.now() + mt.misses * 1000;
+        const d = deck(), t = mt.end - mt.start;
+        if (!d.best || t < d.best) { d.best = t; mt.newBest = true; }
+        const st = dayStat(dayKey(Date.now()), true); st.r += mt.pairs; st.c += mt.pairs;
+        touch(d.id, "meta");
+      }
+    }
+    render();
+  }
+
+  /* ================= Quiz ================= */
+  function startQuiz() { const d = deck(); qz = { order: shuffle(d.cards.map(c => c.id)).slice(0, 10), i: 0, score: 0, picked: null, choices: null }; }
+  function viewQuiz(v) {
+    const d = deck();
+    if (!d) { v.innerHTML = head("Quiz") + noDeck(); return; }
+    if (d.cards.length < 4) { v.innerHTML = head(deckTitle(d), "Multiple choice") + `<div class="empty"><h3>Quiz needs at least 4 cards</h3><p>This deck has ${d.cards.length}.</p><a class="btn primary" href="#cards">Add cards</a></div>`; return; }
+    if (!qz) startQuiz();
+    if (qz.i >= qz.order.length) {
+      const pct = Math.round(qz.score / qz.order.length * 100);
+      v.innerHTML = head(deckTitle(d), "Multiple choice") + `<div class="empty"><h3>${qz.score} of ${qz.order.length} correct · ${pct}%</h3>
+        <p>${pct >= 90 ? "Excellent recall." : pct >= 60 ? "Solid. A flashcard session will firm up the misses." : "Worth a flashcard session before the next quiz."}</p>
+        <div class="row" style="justify-content:center"><button class="btn primary" data-act="quizAgain">New quiz</button><a class="btn" href="#study">Flashcards</a></div></div>`;
+      return;
+    }
+    const card = d.cards.find(c => c.id === qz.order[qz.i]);
+    if (!card) { qz.i++; qz.choices = null; return viewQuiz(v); }
+    if (!qz.choices) qz.choices = shuffle([card, ...shuffle(d.cards.filter(c => c.id !== card.id && c.b !== card.b)).slice(0, 3)]).map(c => ({ id: c.id, text: c.b }));
+    const answered = qz.picked !== null;
+    v.innerHTML = head(deckTitle(d), "Multiple choice") + `<div class="quiz">
+      <div class="progress"><span>${qz.i + 1} / ${qz.order.length}</span><div class="bar"><i style="width:${qz.i / qz.order.length * 100}%"></i></div><span>Score ${qz.score}</span></div>
+      <div class="quiz-q">${esc(card.f)}</div>
+      <div class="choices" aria-disabled="${answered}">${qz.choices.map((c, i) => {
+        const cls = answered ? (c.id === card.id ? "right" : c.id === qz.picked ? "wrong" : "") : "";
+        return `<button class="choice ${cls}" data-act="pick" data-id="${c.id}"><span class="k">${"ABCD"[i]}</span><span>${esc(c.text)}</span></button>`; }).join("")}</div>
+      <div class="foot"><span>${answered ? (qz.picked === card.id ? "Correct" : "Incorrect") : "Keys <kbd>A</kbd>–<kbd>D</kbd>"}</span>
+        ${answered ? `<button class="btn primary" data-act="quizNext" id="quizNext">${qz.i + 1 === qz.order.length ? "See results" : "Next"} <kbd>Enter</kbd></button>` : ""}</div>
     </div>`;
   }
   function pick(id) {
-    if (!quiz || quiz.picked !== null) return;
-    quiz.picked = id;
-    if (id === quiz.order[quiz.i]) quiz.score++;
-    markStudied(); save(); renderQuiz(); renderDecks();
+    if (!qz || qz.picked !== null) return;
+    qz.picked = id; const ok = id === qz.order[qz.i]; if (ok) qz.score++;
+    logPractice(ok); render();
   }
-  function nextQ() { quiz.i++; quiz.picked = null; quiz.choices = null; renderQuiz(); }
+  function quizNext() { if (!qz || qz.picked === null) return; qz.i++; qz.picked = null; qz.choices = null; render(); }
 
-  /* ---------- Manage ---------- */
-  function renderManage() {
-    const d = deck(); const v = $("view-manage");
-    if (!d) { v.innerHTML = ""; return; }
-    v.innerHTML = `
-      <form class="add-form" id="addForm">
-        <label for="fTerm">Front<textarea class="field" id="fTerm" rows="1" required placeholder="Term or question"></textarea></label>
-        <label for="fDef">Back<textarea class="field" id="fDef" rows="1" required placeholder="Definition or answer"></textarea></label>
-        <button class="btn primary" type="submit">Add card</button>
-      </form>
-      <details class="bulk"><summary>Paste many at once</summary>
-        <div class="bulk-body">
-          <p class="hint">One card per line. Separate front and back with a tab, " - ", or " : ". Works with exports from Quizlet and spreadsheets.</p>
-          <textarea class="field" id="bulkText" placeholder="Photosynthesis - Turning light into chemical energy&#10;Osmosis : Water moving across a membrane"></textarea>
-          <div><button class="btn" id="bulkAdd" type="button">Import cards</button></div>
-        </div>
-      </details>
-      <div class="table-wrap"><table>
-        <thead><tr><th>Front</th><th>Back</th><th>Box</th><th><span class="sr" style="position:absolute;left:-9999px">Delete</span></th></tr></thead>
-        <tbody>${d.cards.length ? d.cards.map(c => `<tr><td class="term">${esc(c.f)}</td><td class="def">${esc(c.b)}</td>
-          <td class="boxn">${c.box}${c.due > Date.now() ? ` · ${Math.ceil((c.due - Date.now()) / DAY)}d` : " · due"}</td>
-          <td><button class="icon-btn" data-del="${c.id}" aria-label="Delete ${esc(c.f)}">✕</button></td></tr>`).join("")
-          : `<tr><td colspan="4" class="hint">No cards yet. Add one above.</td></tr>`}</tbody>
-      </table></div>
-      <div class="danger-zone">
-        <button class="btn ghost" id="resetProgress" type="button">Reset progress in this deck</button>
-        <button class="btn ghost danger" id="deleteDeck" type="button">${d._confirmDel ? "Click again to delete this deck" : "Delete deck"}</button>
+  /* ================= Focus timer ================= */
+  const T = { phase: "f", running: false, endAt: 0, remaining: state.focus.f * 60000, round: 0, task: "", log: [], audio: null };
+  const phaseLen = p => (state.focus[p] || 1) * 60000;
+  const PH = { f: "Focus", s: "Short break", l: "Long break" };
+  function setPhase(p) { T.phase = p; T.running = false; T.remaining = phaseLen(p); }
+  function beep() {
+    try {
+      const a = T.audio; if (!a) return;
+      [0, .22, .44].forEach(off => { const o = a.createOscillator(), g = a.createGain(); o.frequency.value = 880; o.connect(g); g.connect(a.destination);
+        g.gain.setValueAtTime(.0001, a.currentTime + off); g.gain.exponentialRampToValueAtTime(.2, a.currentTime + off + .02); g.gain.exponentialRampToValueAtTime(.0001, a.currentTime + off + .18);
+        o.start(a.currentTime + off); o.stop(a.currentTime + off + .2); });
+    } catch (e) {}
+  }
+  function completePhase() {
+    T.running = false;
+    if (T.phase === "f") {
+      const mins = state.focus.f, st = dayStat(dayKey(Date.now()), true); st.m += mins; st.s = (st.s || 0) + 1;
+      T.round++; T.log.unshift({ at: Date.now(), mins, task: T.task });
+      touch("meta"); toast(`${mins}-minute focus block done. Take a break.`);
+      setPhase(T.round % 4 === 0 ? "l" : "s");
+    } else { toast("Break's over. Ready to focus?"); setPhase("f"); }
+    beep(); render();
+  }
+  setInterval(() => {
+    if (!T.running) return;
+    T.remaining = T.endAt - Date.now();
+    if (T.remaining <= 0) { completePhase(); return; }
+    updateTimerDom();
+  }, 250);
+  function updateTimerDom() {
+    const mini = $("miniTimer");
+    mini.hidden = !T.running || route() === "focus";
+    mini.textContent = `${PH[T.phase]} ${fmtTime(T.remaining)}`;
+    const t = $("dialTime"); if (!t) return;
+    t.textContent = fmtTime(T.remaining);
+    const fg = $("dialFg"), C = +fg.getAttribute("data-c");
+    fg.setAttribute("stroke-dashoffset", String(C * (1 - T.remaining / phaseLen(T.phase))));
+  }
+  function viewFocus(v) {
+    const R = 120, C = 2 * Math.PI * R, frac = T.remaining / phaseLen(T.phase);
+    const today = dayStat(dayKey(Date.now()));
+    const ticks = Array.from({ length: 60 }, (_, i) => { const a = i / 60 * 2 * Math.PI, r1 = i % 5 ? 132 : 128, r2 = 138;
+      return `<line class="tick-ring" x1="${150 + r1 * Math.cos(a)}" y1="${150 + r1 * Math.sin(a)}" x2="${150 + r2 * Math.cos(a)}" y2="${150 + r2 * Math.sin(a)}" stroke-width="${i % 5 ? 1 : 2}"></line>`; }).join("");
+    v.innerHTML = head("Focus timer", "Work in focused blocks with short breaks. Every fourth break is a long one.") + `<div class="focus">
+      <section class="panel dial">
+        <div class="seg" role="group" aria-label="Phase">${["f", "s", "l"].map(p => `<button data-act="phase" data-v="${p}" aria-pressed="${T.phase === p}">${PH[p]}</button>`).join("")}</div>
+        <div class="dial-wrap"><svg viewBox="0 0 300 300" aria-hidden="true">${ticks}
+          <circle cx="150" cy="150" r="${R}" fill="none" stroke="var(--sunk)" stroke-width="12"></circle>
+          <circle id="dialFg" class="dial-fg ${T.phase === "f" ? "" : "brk"}" data-c="${C}" cx="150" cy="150" r="${R}" fill="none" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - frac)}"></circle></svg>
+          <div class="dial-read"><span class="p">${PH[T.phase]}</span><span class="t" id="dialTime">${fmtTime(T.remaining)}</span>
+            <span class="dots" aria-label="Round ${T.round % 4} of 4">${[0, 1, 2, 3].map(i => `<i class="${i < T.round % 4 || (T.round > 0 && T.round % 4 === 0 && T.phase === "l") ? "on" : ""}"></i>`).join("")}</span></div></div>
+        <input class="field task-input" id="taskInput" placeholder="What are you working on?" value="${esc(T.task)}" maxlength="80" aria-label="Task">
+        <div class="row" style="justify-content:center">
+          <button class="btn primary" data-act="timerToggle" style="min-width:120px;justify-content:center">${T.running ? "Pause" : T.remaining < phaseLen(T.phase) ? "Resume" : "Start"}</button>
+          <button class="btn" data-act="timerReset">Reset</button><button class="btn ghost" data-act="timerSkip">Skip</button></div>
+      </section>
+      <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+        <section class="panel"><div class="panel-head"><h3>Today</h3></div>
+          <div class="week-stats"><span><b>${today.m}</b> focus min</span><span><b>${today.s || 0}</b> blocks</span><span><b>${today.r}</b> cards</span></div>
+          ${T.log.length ? `<ul class="log">${T.log.slice(0, 8).map(l => `<li><span>${esc(l.task || "Focus block")}</span><span>${new Date(l.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} · ${l.mins}m</span></li>`).join("")}</ul>` : `<p class="hint">Finished blocks from this visit appear here.</p>`}
+        </section>
+        <section class="panel"><div class="panel-head"><h3>Lengths</h3><span class="hint">minutes</span></div>
+          <div class="durations">${["f", "s", "l"].map(p => `<label for="dur-${p}">${PH[p]}<input class="field" id="dur-${p}" type="number" min="1" max="120" value="${state.focus[p]}" data-dur="${p}"></label>`).join("")}</div>
+        </section>
+      </div></div>`;
+    updateTimerDom();
+  }
+
+  /* ================= Edit cards ================= */
+  function cardRows(d) {
+    const q = norm(cardFilter);
+    const list = q ? d.cards.filter(c => norm(c.f + " " + c.b).includes(q)) : d.cards;
+    if (!list.length) return `<tr><td colspan="4" class="hint">${d.cards.length ? "No cards match your search." : "No cards yet. Add one above."}</td></tr>`;
+    return list.map(c => editing === c.id ? `<tr>
+        <td><label class="sr" for="ef-${c.id}">Front</label><textarea class="field" id="ef-${c.id}">${esc(c.f)}</textarea></td>
+        <td><label class="sr" for="eb-${c.id}">Back</label><textarea class="field" id="eb-${c.id}">${esc(c.b)}</textarea></td>
+        <td class="boxn">${c.box}</td>
+        <td class="acts"><button class="btn small primary" data-act="saveEdit" data-id="${c.id}">Save</button> <button class="btn small ghost" data-act="cancelEdit">Cancel</button></td></tr>` :
+      `<tr><td class="term">${esc(c.f)}</td><td class="def">${esc(c.b)}</td>
+        <td class="boxn">${c.box}${isDue(c) ? " · due" : ` · ${Math.ceil((c.due - Date.now()) / DAY)}d`}</td>
+        <td class="acts"><button class="icon-btn ${c.star ? "on" : ""}" data-act="starRow" data-id="${c.id}" aria-label="${c.star ? "Unstar" : "Star"} ${esc(c.f)}" aria-pressed="${c.star}">${c.star ? "★" : "☆"}</button>
+          <button class="icon-btn" data-act="edit" data-id="${c.id}">Edit</button>
+          <button class="icon-btn del" data-act="del" data-id="${c.id}" aria-label="Delete ${esc(c.f)}">✕</button></td></tr>`).join("");
+  }
+  function viewCards(v) {
+    const d = deck();
+    if (!d) { v.innerHTML = head("Edit cards") + noDeck(); return; }
+    v.innerHTML = head(deckTitle(d), `${plural(d.cards.length, "card")} · ${mastery(d)}% mastered`) + `
+      <section class="panel"><div class="panel-head"><h3>Deck</h3></div>
+        <form class="row" id="renameForm"><label class="sr" for="deckName">Deck name</label><input class="field" id="deckName" value="${esc(d.name)}" maxlength="60" style="flex:1;min-width:180px"><button class="btn" type="submit">Rename</button></form>
+      </section>
+      <section class="panel"><div class="panel-head"><h3>Add a card</h3>${S.sample ? `<a class="btn small ghost" href="#create">Generate from notes</a>` : ""}</div>
+        <form class="add-form" id="addForm">
+          <label for="fTerm">Front<textarea class="field" id="fTerm" rows="1" required placeholder="Term or question"></textarea></label>
+          <label for="fDef">Back<textarea class="field" id="fDef" rows="1" required placeholder="Definition or answer"></textarea></label>
+          <button class="btn primary" type="submit">Add card</button>
+        </form>
+        <details class="bulk"><summary>Paste many at once</summary>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <p class="hint">One card per line. Separate front and back with a tab, " - " or " : ". Spreadsheet and Quizlet exports work.</p>
+            <label class="sr" for="bulkText">Cards to import</label>
+            <textarea class="field mono-area" id="bulkText" placeholder="Photosynthesis - Turning light into chemical energy&#10;Osmosis : Water moving across a membrane"></textarea>
+            <div class="row"><button class="btn" data-act="bulk" type="button">Import cards</button><button class="btn ghost" data-act="exportCards" type="button">Copy deck as text</button></div>
+          </div>
+        </details>
+      </section>
+      <div class="row" style="justify-content:space-between"><label class="sr" for="cardSearch">Search cards</label>
+        <input class="field" id="cardSearch" placeholder="Search this deck" value="${esc(cardFilter)}" style="flex:1;min-width:200px;max-width:360px"></div>
+      <div class="table-wrap"><table><thead><tr><th>Front</th><th>Back</th><th>Box</th><th><span class="sr">Actions</span></th></tr></thead>
+        <tbody id="cardRows">${cardRows(d)}</tbody></table></div>
+      <div class="row">
+        <button class="btn ghost" data-act="resetProgress">Reset progress</button>
+        <button class="btn ghost danger" data-act="deleteDeck">${delConfirm ? "Click again to delete this deck" : "Delete deck"}</button>
       </div>`;
   }
-
-  /* ---------- Wiring ---------- */
-  function setMode(m) {
-    mode = m;
-    document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.mode === m)));
-    $("view-study").hidden = m !== "study"; $("view-study").style.display = m === "study" ? "flex" : "none";
-    $("view-quiz").hidden = m !== "quiz"; $("view-manage").hidden = m !== "manage";
-    if (m === "study") { session = null; renderStudy(); }
-    if (m === "quiz") renderQuiz();
-    if (m === "manage") renderManage();
+  function parseLines(text) {
+    const out = [];
+    text.split(/\n/).map(l => l.trim()).filter(Boolean).forEach(l => {
+      const m = l.split(/\t| - | – | — | : /);
+      if (m.length >= 2 && m[0].trim()) out.push([m[0].trim(), m.slice(1).join(" - ").trim()]);
+    });
+    return out.filter(p => p[1]);
   }
-  function renderAll() { renderDecks(); renderBoxes(); setMode(mode); }
 
-  document.addEventListener("click", e => {
-    const t = e.target.closest("button"); if (!t) return;
-    if (t.classList.contains("deck-btn")) { state.current = t.dataset.id; quiz = null; save(); renderAll(); }
-    else if (t.dataset.mode) setMode(t.dataset.mode);
-    else if (t.dataset.goto) setMode(t.dataset.goto);
-    else if (t.id === "theCard") flip();
-    else if (t.dataset.g) grade(+t.dataset.g);
-    else if (t.id === "cramBtn") { const d = deck(); session = { queue: shuffle(d.cards.map(c => c.id)), done: 0, total: d.cards.length, flipped: false }; renderStudy(); }
-    else if (t.dataset.pick) pick(t.dataset.pick);
-    else if (t.id === "nextQ") nextQ();
-    else if (t.id === "retryQuiz") { newQuiz(); renderQuiz(); }
-    else if (t.dataset.del) { const d = deck(); d.cards = d.cards.filter(c => c.id !== t.dataset.del); save(); renderManage(); renderDecks(); renderBoxes(); quiz = null; toast("Card deleted"); }
-    else if (t.id === "bulkAdd") {
-      const lines = $("bulkText").value.split(/\n/).map(l => l.trim()).filter(Boolean);
-      const add = []; lines.forEach(l => { const m = l.split(/\t| - | – | : /); if (m.length >= 2) add.push([m[0].trim(), m.slice(1).join(" - ").trim()]); });
-      if (!add.length) { toast("No cards found. Use a tab, ' - ' or ' : ' between front and back."); return; }
-      deck().cards.push(...mk(add)); save(); renderManage(); renderDecks(); renderBoxes(); quiz = null;
-      toast(`Imported ${add.length} card${add.length === 1 ? "" : "s"}`);
-    }
-    else if (t.id === "resetProgress") { deck().cards.forEach(c => { c.box = 1; c.due = 0; }); save(); renderAll(); toast("Progress reset"); }
-    else if (t.id === "deleteDeck") {
-      const d = deck();
-      if (!d._confirmDel) { d._confirmDel = true; renderManage(); setTimeout(() => { delete d._confirmDel; if (mode === "manage" && deck() === d) renderManage(); }, 3000); return; }
-      state.decks = state.decks.filter(x => x.id !== d.id);
-      state.current = state.decks[0] ? state.decks[0].id : null; quiz = null; save(); renderAll(); toast("Deck deleted");
-    }
-  });
-
-  document.addEventListener("submit", e => {
-    e.preventDefault();
-    if (e.target.id === "newDeckForm") {
-      const name = $("newDeckName").value.trim(); if (!name) return;
-      const d = { id: uid(), name, cards: [] }; state.decks.push(d); state.current = d.id; quiz = null;
-      $("newDeckName").value = ""; save(); mode = "manage"; renderAll(); $("fTerm").focus();
-    }
-    if (e.target.id === "addForm") {
-      const f = $("fTerm").value.trim(), b = $("fDef").value.trim(); if (!f || !b) return;
-      deck().cards.push(...mk([[f, b]])); save(); renderManage(); renderDecks(); renderBoxes(); quiz = null;
-      $("fTerm").focus(); toast("Card added");
-    }
-  });
-
-  document.addEventListener("keydown", e => {
-    if (e.target.matches("input, textarea")) {
-      if (e.key === "Enter" && !e.shiftKey && e.target.closest("#addForm")) { e.preventDefault(); e.target.closest("form").requestSubmit(); }
+  /* ================= Create with AI ================= */
+  function viewCreate(v) {
+    if (!S.sample) {
+      v.innerHTML = head("Create with AI") + `<div class="empty"><h3>AI card generation isn't available here</h3><p>Open Cardlit in Claude to generate cards from your notes. You can still add and import cards on the Edit cards page.</p><a class="btn primary" href="#cards">Edit cards</a></div>`;
       return;
     }
-    if (mode === "study") {
-      if (e.key === " ") { e.preventDefault(); flip(); }
-      else if (["1","2","3","4"].includes(e.key)) grade(+e.key - 1);
-    } else if (mode === "quiz" && quiz) {
-      const i = "abcd".indexOf(e.key.toLowerCase());
-      if (i >= 0 && quiz.choices && quiz.choices[i]) pick(quiz.choices[i].id);
-      else if (e.key === "Enter" && quiz.picked !== null) nextQ();
-    }
-  });
+    if (!gen) gen = { src: "", n: 10, target: state.current || "__new", newName: "", status: "idle", items: [], error: "" };
+    const opts = state.decks.map(d => `<option value="${d.id}" ${gen.target === d.id ? "selected" : ""}>${esc(d.name)}</option>`).join("") + `<option value="__new" ${gen.target === "__new" ? "selected" : ""}>New deck…</option>`;
+    const kept = gen.items.filter(x => x.on).length;
+    v.innerHTML = head("Create with AI", "Paste lecture notes, a textbook passage or just a topic. Claude drafts cards; you choose which to keep.") + `
+      <section class="panel"><form class="gen-form" id="genForm">
+        <label class="stack-label" for="genSrc">Notes or topic<textarea class="field" id="genSrc" placeholder="e.g. The causes of World War I, or paste a page of notes">${esc(gen.src)}</textarea></label>
+        <div class="gen-opts">
+          <label class="stack-label" for="genN">How many<select class="field" id="genN">${[5, 10, 15, 20].map(n => `<option ${gen.n === n ? "selected" : ""}>${n}</option>`).join("")}</select></label>
+          <label class="stack-label" for="genTarget">Add to<select class="field" id="genTarget">${opts}</select></label>
+          <label class="stack-label" for="genNew" ${gen.target === "__new" ? "" : "hidden"}>New deck name<input class="field" id="genNew" value="${esc(gen.newName)}" placeholder="Deck name" maxlength="60"></label>
+          <button class="btn primary" type="submit" ${gen.status === "loading" ? "disabled" : ""}>${gen.status === "loading" ? '<span class="spinner"></span> Drafting cards' : "Generate cards"}</button>
+          ${gen.status === "loading" ? `<button class="btn ghost" type="button" data-act="genStop">Stop</button>` : ""}
+        </div>
+        ${gen.error ? `<p class="error-text">${esc(gen.error)}</p>` : ""}
+      </form></section>
+      ${gen.items.length ? `<section class="panel"><div class="panel-head"><h3>Draft cards</h3><span class="hint">Untick any you don't want</span></div>
+        <ul class="gen-list">${gen.items.map((x, i) => `<li class="${x.on ? "" : "off"}"><input type="checkbox" id="gi-${i}" data-act="genToggle" data-i="${i}" ${x.on ? "checked" : ""} aria-label="Keep ${esc(x.f)}">
+          <label class="f" for="gi-${i}">${esc(x.f)}</label><span class="b">${esc(x.b)}</span></li>`).join("")}</ul>
+        <div class="row" style="justify-content:flex-end"><button class="btn ghost" data-act="genClear">Discard</button><button class="btn primary" data-act="genAdd" ${kept ? "" : "disabled"}>Add ${plural(kept, "card")}</button></div>
+      </section>` : ""}`;
+  }
+  async function generate() {
+    gen.src = $("genSrc").value.trim(); gen.n = +$("genN").value; gen.target = $("genTarget").value; gen.newName = ($("genNew") || {}).value || "";
+    if (!gen.src) { gen.error = "Add some notes or a topic first."; render(); return; }
+    gen.status = "loading"; gen.error = ""; gen.ctl = new AbortController(); render();
+    try {
+      const res = await S.sample.json(`You write study flashcards for students. Using only accurate, well-established facts, write exactly ${gen.n} flashcards from the material below.
+Rules: each "front" is a term, name or short question (under 12 words). Each "back" is a precise answer (under 30 words). Cover the most important ideas, no duplicates, no trick questions.
+Reply with only JSON in this shape: {"cards":[{"front":"Mitochondrion","back":"Organelle that produces ATP through cellular respiration."}]}
 
-  renderAll();
+Material:
+"""
+${gen.src.slice(0, 12000)}
+"""`, { modelTier: "default", signal: gen.ctl.signal });
+      const list = (res && Array.isArray(res.cards) ? res.cards : Array.isArray(res) ? res : [])
+        .filter(c => c && c.front && c.back).map(c => ({ f: String(c.front).trim(), b: String(c.back).trim(), on: true }));
+      if (!list.length) gen.error = "Claude didn't return any usable cards. Try adding more detail.";
+      gen.items = list;
+    } catch (e) {
+      gen.error = e && e.code === "cancelled" ? "" : e && e.code === "not_granted" ? "Card generation needs your permission. Allow it from the artifact's Permissions menu." :
+        e && e.code === "rate_limited" ? "Too many requests right now. Wait a minute and try again." : e && e.code === "invalid_json" ? "The reply couldn't be read as cards. Try again or ask for fewer." : "Couldn't generate cards. Try again.";
+    }
+    gen.status = "idle"; if (route() === "create") render();
+  }
+
+  /* ================= Events ================= */
+  const ACT = {
+    pickDeck: el => { state.current = el.dataset.id; touch("meta"); resetModes(); if (route() === "home") location.hash = "#study"; else render(); },
+    openDeck: (el, e) => { e.preventDefault(); state.current = el.dataset.id; touch("meta"); resetModes(); location.hash = "#study"; if (route() === "study") render(); },
+    studyMostDue: (el, e) => { e.preventDefault(); const d = state.decks.slice().sort((a, b) => b.cards.filter(isDue).length - a.cards.filter(isDue).length)[0]; if (d) { state.current = d.id; touch("meta"); } resetModes(); location.hash = "#study"; if (route() === "study") render(); },
+    flip, explain,
+    grade: el => grade(+el.dataset.g),
+    dir: el => { prefs.reverse = el.dataset.v === "1"; savePrefs(); if (study) { study.flipped = false; study.explain = null; } render(); },
+    cram: el => { startStudy(el.dataset.v); render(); },
+    star: () => { const d = deck(), c = d.cards.find(x => x.id === study.queue[0]); c.star = !c.star; touch(d.id); render(); },
+    writeDir: el => { prefs.writeDir = el.dataset.v; savePrefs(); if (wr) { wr.answer = ""; wr.verdict = null; } render(); },
+    writeSkip: () => writeCheck(true),
+    writeNext, writeAgain: () => { startWrite(); render(); },
+    writeOverride: () => { wr.verdict = "ok"; writeNext(); },
+    tile: el => tapTile(+el.dataset.i),
+    matchAgain: () => { clearInterval(matchTimer); startMatch(); render(); },
+    pick: el => pick(el.dataset.id), quizNext, quizAgain: () => { startQuiz(); render(); },
+    phase: el => { setPhase(el.dataset.v); render(); },
+    timerToggle: () => {
+      if (!T.audio) { try { T.audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+      if (T.running) { T.running = false; T.remaining = T.endAt - Date.now(); } else { T.running = true; T.endAt = Date.now() + T.remaining; }
+      render();
+    },
+    timerReset: () => { setPhase(T.phase); render(); },
+    timerSkip: () => { T.running = false; if (T.phase === "f") setPhase("s"); else setPhase("f"); render(); },
+    starRow: el => { const d = deck(), c = d.cards.find(x => x.id === el.dataset.id); c.star = !c.star; touch(d.id); $("cardRows").innerHTML = cardRows(d); },
+    edit: el => { editing = el.dataset.id; $("cardRows").innerHTML = cardRows(deck()); const t = $("ef-" + editing); if (t) t.focus(); },
+    cancelEdit: () => { editing = null; $("cardRows").innerHTML = cardRows(deck()); },
+    saveEdit: el => { const d = deck(), c = d.cards.find(x => x.id === el.dataset.id), f = $("ef-" + c.id).value.trim(), b = $("eb-" + c.id).value.trim();
+      if (!f || !b) { toast("Both sides need text."); return; } c.f = f; c.b = b; editing = null; touch(d.id); $("cardRows").innerHTML = cardRows(d); toast("Card saved"); },
+    del: el => { const d = deck(); d.cards = d.cards.filter(c => c.id !== el.dataset.id); touch(d.id); study = wr = mt = qz = null; render(); toast("Card deleted"); },
+    bulk: () => { const add = parseLines($("bulkText").value); if (!add.length) { toast("No cards found. Put a tab, ' - ' or ' : ' between front and back."); return; }
+      const d = deck(); d.cards.push(...mkCards(add)); touch(d.id); resetModes(); render(); toast(`Imported ${plural(add.length, "card")}`); },
+    exportCards: async () => { const d = deck(), text = d.cards.map(c => `${c.f}\t${c.b}`).join("\n");
+      try { await navigator.clipboard.writeText(text); toast(`Copied ${plural(d.cards.length, "card")} as tab-separated text`); }
+      catch (e) { const t = $("bulkText"); t.value = text; t.focus(); t.select(); toast("Copy blocked. The text is selected in the box, copy it from there."); } },
+    resetProgress: () => { const d = deck(); d.cards.forEach(c => { c.box = 1; c.due = 0; c.seen = 0; c.lapses = 0; }); d.best = null; touch(d.id); resetModes(); render(); toast("Progress reset"); },
+    deleteDeck: () => {
+      const d = deck();
+      if (!delConfirm) { delConfirm = true; render(); setTimeout(() => { if (delConfirm) { delConfirm = false; if (route() === "cards") render(); } }, 3500); return; }
+      delConfirm = false; state.decks = state.decks.filter(x => x.id !== d.id); state.current = state.decks[0] ? state.decks[0].id : null;
+      dirty.delete(d.id); removed.add(d.id); touch("meta"); resetModes(); render(); toast("Deck deleted");
+    },
+    genStop: () => { if (gen && gen.ctl) gen.ctl.abort(); },
+    genToggle: el => { gen.items[+el.dataset.i].on = el.checked; render(); },
+    genClear: () => { gen.items = []; render(); },
+    genAdd: () => {
+      let d;
+      if (gen.target === "__new") { d = { id: uid(), name: (gen.newName || "").trim() || gen.src.split(/\n/)[0].slice(0, 40) || "New deck", sample: false, best: null, cards: [] }; state.decks.push(d); }
+      else d = state.decks.find(x => x.id === gen.target);
+      if (!d) return;
+      const add = gen.items.filter(x => x.on).map(x => [x.f, x.b]);
+      d.cards.push(...mkCards(add)); state.current = d.id; touch(d.id, "meta");
+      gen = null; resetModes(); toast(`Added ${plural(add.length, "card")} to ${d.name}`); location.hash = "#study"; if (route() === "study") render();
+    },
+  };
+  document.addEventListener("click", e => {
+    const el = e.target.closest("[data-act]"); if (!el) return;
+    const fn = ACT[el.dataset.act]; if (!fn) return;
+    if (el.tagName === "INPUT") return; // checkboxes handled on change
+    fn(el, e);
+  });
+  document.addEventListener("change", e => {
+    const el = e.target;
+    if (el.dataset.act === "genToggle") ACT.genToggle(el);
+    else if (el.id === "goalInput") { state.goal = Math.min(500, Math.max(5, +el.value || 30)); touch("meta"); render(); }
+    else if (el.dataset.dur) { const p = el.dataset.dur; state.focus[p] = Math.min(120, Math.max(1, Math.round(+el.value) || 1)); touch("meta"); if (T.phase === p && !T.running) T.remaining = phaseLen(p); render(); }
+    else if (el.id === "genTarget") { gen.target = el.value; gen.src = $("genSrc").value; gen.n = +$("genN").value; render(); }
+  });
+  document.addEventListener("input", e => {
+    if (e.target.id === "cardSearch") { cardFilter = e.target.value; $("cardRows").innerHTML = cardRows(deck()); }
+    else if (e.target.id === "taskInput") T.task = e.target.value;
+    else if (e.target.id === "genNew" && gen) gen.newName = e.target.value;
+  });
+  document.addEventListener("submit", e => {
+    e.preventDefault();
+    const id = e.target.id;
+    if (id === "newDeckForm") {
+      const name = $("newDeckName").value.trim(); if (!name) return;
+      const d = { id: uid(), name, sample: false, best: null, cards: [] };
+      state.decks.push(d); state.current = d.id; $("newDeckName").value = ""; touch(d.id, "meta"); resetModes();
+      location.hash = "#cards"; if (route() === "cards") render();
+      setTimeout(() => $("fTerm") && $("fTerm").focus(), 0);
+    } else if (id === "addForm") {
+      const f = $("fTerm").value.trim(), b = $("fDef").value.trim(); if (!f || !b) return;
+      const d = deck(); d.cards.push(...mkCards([[f, b]])); touch(d.id); study = wr = mt = qz = null;
+      render(); $("fTerm").focus(); toast("Card added");
+    } else if (id === "renameForm") {
+      const n = $("deckName").value.trim(); if (!n) return; const d = deck(); d.name = n; d.sample = false; touch(d.id); render(); toast("Deck renamed");
+    } else if (id === "writeForm") writeCheck(false);
+    else if (id === "genForm") generate();
+  });
+  document.addEventListener("keydown", e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const tgt = e.target, typing = tgt.matches("input, textarea, select");
+    if (typing) {
+      if (e.key === "Enter" && !e.shiftKey && tgt.closest("#addForm")) { e.preventDefault(); tgt.closest("form").requestSubmit(); }
+      return;
+    }
+    const r = route();
+    if (r === "study") {
+      if (e.key === " " || (e.key === "Enter" && tgt.id === "theCard")) { e.preventDefault(); flip(); return; }
+      if (["1", "2", "3", "4"].includes(e.key)) { grade(+e.key - 1); return; }
+    } else if (r === "quiz" && qz) {
+      const i = "abcd".indexOf(e.key.toLowerCase());
+      if (i >= 0 && qz.choices && qz.choices[i]) { pick(qz.choices[i].id); return; }
+      if (e.key === "Enter" && qz.picked !== null) { e.preventDefault(); quizNext(); return; }
+    } else if (r === "write" && wr && wr.verdict && e.key === "Enter") { e.preventDefault(); writeNext(); return; }
+    else if (r === "focus" && e.key === " ") { e.preventDefault(); ACT.timerToggle(); return; }
+    if (tgt.tagName === "BUTTON" || tgt.tagName === "A") return;
+    const jump = { g: "home", f: "study", w: "write", m: "match", q: "quiz", t: "focus", e: "cards" }[e.key.toLowerCase()];
+    if (jump) location.hash = "#" + jump;
+  });
+  window.addEventListener("hashchange", render);
+
+  render();
+  connectAccount();
+  connectAI();
 })();
 </script>
